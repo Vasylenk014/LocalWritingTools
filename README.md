@@ -2,10 +2,10 @@
 
 [![Platform: macOS | Windows](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows-brightgreen.svg)](#-repository-structure-monorepo)
 [![Privacy: 100% Local](https://img.shields.io/badge/Privacy-100%25%20Local-success.svg)](#-privacy--local-security)
-[![Engine: LM Studio v1](https://img.shields.io/badge/Engine-LM%20Studio%20v1%20REST-orange.svg)](#-getting-started)
+[![Engine: LM Studio & FastFlowLM](https://img.shields.io/badge/Engine-LM%20Studio%20GPU%20%7C%20FastFlowLM%20NPU-orange.svg)](#-getting-started)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](#-license)
 
-> **Local Writing Tools** is a private, lightweight menu bar and system tray writing companion designed specifically for customer support specialists (e.g. Zendesk). It connects to locally hosted LLMs via **LM Studio** to refine, edit, and summarize support drafts instantly with **zero cloud dependencies**, zero subscription fees, and no risk of customer data leaks.
+> **Local Writing Tools** is a private, lightweight writing companion designed specifically for customer support specialists (e.g. Zendesk). It connects to locally hosted LLMs via **FastFlowLM (AMD Ryzen AI NPU)** on laptops or **LM Studio (NVIDIA/AMD GPU)** on desktop PCs to refine, edit, and summarize support drafts instantly with **zero cloud dependencies**, zero subscription fees, and no risk of customer data leaks.
 
 ---
 
@@ -14,7 +14,7 @@
 Customer support teams handle sensitive customer information, ticket threads, order numbers, and personal details daily. Pasting customer communications into cloud-based AI tools (OpenAI, Anthropic, etc.) creates compliance risks and compromises customer privacy.
 
 **Local Writing Tools** solves this by:
-- Running **100% on your local machine** using local models via LM Studio.
+- Running **100% on your local machine** using local models via FastFlowLM (NPU) or LM Studio (GPU).
 - Using **stateless REST requests** (`"store": false`) so ticket context is never retained or indexed into model memory.
 - Operating unobtrusively in your **macOS Menu Bar** or **Windows System Tray** with quick global hotkeys.
 
@@ -26,16 +26,23 @@ Customer support teams handle sensitive customer information, ticket threads, or
 - 🛠️ **3 Purpose-Built Support Modes:**
   - **Quick Fix:** Grammatical correction, clarity, and tone improvements while strictly preserving original meaning, length, facts, and Zendesk placeholders (`{{ticket.requester.first_name}}`).
   - **Detailed Review:** Structured feedback broken down into: `CORRECTED`, `CONCISE`, `CHANGES` (with grammar/style rationale), and `NOTES`.
-  - **Summarize:** Extracts core issues, key details, and the customer's goal from lengthy, AI-generated customer messages in 5 seconds.
+  - **Summarize:** Extracts core issues, key details, and the customer's goal from lengthy, AI-generated customer messages in 5 seconds (with buffer isolation from reply drafts).
+- 🔀 **Universal Multi-Provider Architecture (Windows):**
+  - **⚡ FastFlowLM (NPU):** AMD Ryzen AI NPU on laptop (port `52625`), zero GPU load, highly battery efficient.
+  - **🎮 LM Studio (GPU):** Desktop PC with GPU server on port `1234` (supports DeepSeek, Qwen, Llama).
+  - **🌐 Custom / Ollama:** Standard OpenAI-compatible server endpoint support.
+  - **1-Click Switching:** Instant provider switcher pill button in header (`[⚡ NPU ▾]` / `[🎮 LM Studio ▾]`).
 - 💬 **Ticket Context / Thread History:** An optional collapsible context section (`Ticket context`). Pass previous messages or the client's inquiry inside `<context>...</context>` so the model tailors its tone and answers specific questions while rewriting **only** your draft.
 - 🎭 **Tone Presets (Quick Fix):** Instant tone modifiers: `✨ Standard`, `🤝 Friendly`, `⚡️ Concise`, `🛡️ De-escalate`, and `👔 Formal`.
 - 🪄 **Zero-Latency Offline Transformations (No AI):** Instant deterministic text formatting (0 ms, zero GPU load):
   - **Case:** Make Upper Case, Make Lower Case, Capitalize Words, Sentence Case.
   - **Formatting:** Clean Extra Spaces (removes double spaces & collapses empty lines), Straighten Quotes (`«»“”` → `""`), Remove Line Breaks (unwraps paragraphs).
-  - Also accessible via native context menu (right-click on selection).
 - 📊 **Word-Level Visual Diff:** Real-time LCS diff algorithm highlights modifications inline (green for additions, strikethrough red for removals).
-- 🧠 **Granular Reasoning Controls:** Full control over thinking models (e.g. DeepSeek-R1, Qwen Reasoning): toggle reasoning between `Auto`, `Off`, `Low`, `Medium`, or `High`.
+- 📈 **Live Hardware Telemetry (Windows):** Real-time monitoring of RAM usage and compute load:
+  - Dynamically shows **NPU:** load when running on laptop Ryzen AI.
+  - Dynamically shows **GPU:** load when running on desktop LM Studio.
 - 🕒 **Recent Checks History:** Keeps your last 15 checks locally in secure app storage with quick `Restore` and `Copy` buttons.
+- 🧪 **Automated Verification:** Comprehensive automated test suite with 13 built-in verification tests.
 
 ---
 
@@ -48,12 +55,18 @@ LocalWritingTools/
 │   ├── build.sh               # Standalone zero-dependency build script
 │   ├── AppIcon.icns           # Multi-resolution macOS icon
 │   └── Package.swift          # SPM package configuration
-├── windows/                   # Windows companion app
-│   └── README.md              # Windows instructions and implementation files
+├── windows/                   # Native Windows app (C# .NET 8 WPF, OLED dark theme)
+│   ├── Models/                # Data models (AppSettings, FlmModel, HistoryItem)
+│   ├── Services/              # Backend services (API, Diff, Telemetry, Hotkey, SmartCopy)
+│   ├── tests/                 # Automated test suite (13 passing tests)
+│   ├── MainWindow.xaml/.cs    # Main UI window, streaming, provider controls
+│   └── WritingTools.csproj    # .NET 8 project file
+├── shared/                    # Standardized system prompts & assets
+│   └── prompts/               # Verified prompts for QuickFix, DetailedReview, Summarize
 ├── docs/                      # Architecture manuals and porting specifications
 │   ├── MACOS_BUILD_GUIDE.md   # Complete macOS architecture & build guide
 │   └── WINDOWS_PORT_SPEC.md   # Windows PRD & master specification
-├── .gitignore                 # Optimized for Swift, Xcode, .NET, C#, and Python
+├── .gitignore                 # Optimized for Swift, Xcode, .NET, C#, and Visual Studio
 └── README.md
 ```
 
@@ -61,31 +74,54 @@ LocalWritingTools/
 
 ## 🚀 Getting Started
 
-### 1. Prerequisites (LM Studio)
-1. Install [LM Studio](https://lmstudio.ai/) (macOS / Windows).
-2. Download any capable instruction-tuned model. Recommended models:
-   - `Qwen 2.5 7B / 14B Instruct` (Outstanding multilingual performance)
-   - `Gemma 2 9B` / `Gemma 3`
-   - `Llama 3.1 8B` or `Llama 3.2`
-   - `Mistral Nemo 12B`
-3. Navigate to the **Developer Tab** (`<>`) in LM Studio and click **Start Server** on port `1234` with CORS enabled.
+### 1. Prerequisites (Local LLM Server)
+
+#### Option A: LM Studio (Desktop PC with GPU or Mac)
+1. Install [LM Studio](https://lmstudio.ai/).
+2. Download any capable instruction-tuned model (e.g. `Qwen 2.5 7B / 14B`, `DeepSeek R1 / Distill`, `Llama 3.1 8B`).
+3. Navigate to the **Developer Tab** (`<->`) in LM Studio and click **Start Server** on port `1234` with CORS enabled.
+
+#### Option B: FastFlowLM (Laptop with AMD Ryzen AI NPU)
+- Windows app connects to local FastFlowLM on port `52625` (`flm serve <model> --port 52625`).
 
 ---
 
-### 2. macOS Installation
+### 2. Running on Windows (Desktop PC or Laptop)
 
-You can build and package the native macOS app in seconds using the command line:
+#### Method 1: Run directly from repository (requires .NET 8 SDK)
+```powershell
+# 1. Clone repository
+git clone https://github.com/Vasylenk014/LocalWritingTools.git
+cd LocalWritingTools\windows
+
+# 2. Run application
+dotnet run
+
+# 3. (Optional) Run automated tests
+dotnet run --project tests/WritingTools.Tests.csproj
+```
+
+#### Method 2: Build standalone portable EXE (No .NET installation required)
+```powershell
+cd LocalWritingTools\windows
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish-standalone
+```
+Double-click `publish-standalone\WritingTools.exe` to run anywhere.
+
+---
+
+### 3. Running on macOS
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/Vasylenk014/LocalWritingTools.git
 cd LocalWritingTools/macos
 
-# Build release bundle
+# 2. Build release bundle
 chmod +x build.sh
 ./build.sh
 
-# Install into /Applications
+# 3. Install into /Applications
 cp -R WritingTools.app /Applications/
 xattr -cr /Applications/WritingTools.app
 open /Applications/WritingTools.app
@@ -96,18 +132,12 @@ For troubleshooting and detailed architecture, check [docs/MACOS_BUILD_GUIDE.md]
 
 ---
 
-### 3. Windows Installation
-
-Refer to [windows/README.md](windows/README.md) and the comprehensive technical design in [docs/WINDOWS_PORT_SPEC.md](docs/WINDOWS_PORT_SPEC.md).
-
----
-
 ## 🔒 Privacy & Local Security
 
 - **No telemetry or tracking.**
-- **No external network calls.** The application connects strictly to your local host at `http://127.0.0.1:1234`.
-- **Stateless execution.** Requests use `"store": false` to prevent history retention in LM Studio.
-- **Local persistence.** Recent checks and custom prompts remain strictly in your local operating system preferences (`UserDefaults` on macOS, local app storage on Windows).
+- **No external cloud network calls.** The application connects strictly to your local host (`http://127.0.0.1:1234` or `http://127.0.0.1:52625`).
+- **Stateless execution.** Requests use `"store": false` to prevent history retention in the local inference engine.
+- **Local persistence.** Recent checks and custom prompts remain strictly in your local operating system preferences (`UserDefaults` on macOS, `%APPDATA%` on Windows).
 
 ---
 
