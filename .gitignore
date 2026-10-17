@@ -1,0 +1,60 @@
+# macOS & Apple
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# Swift / SPM / Xcode
+.build/
+DerivedData/
+*.xcuserstate
+project.xcworkspace/
+xcuserdata/
+*.app
+*.dSYM
+*.ipa
+*.pkg
+
+# Windows / .NET / C# / Visual Studio
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+packages/
+TestResults/
+*.nupkg
+*.exe
+*.dll
+
+# Python (if Windows version uses Python / PySide)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv/
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+
+# General IDEs & Editors
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.swp
+*~
+*.bak
