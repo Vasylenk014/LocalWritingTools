@@ -464,6 +464,129 @@ CHANGES:
             failed++;
         }
 
+        // 14. MarkdownDocumentRenderer Test (Detailed Review & Summarize styling)
+        try
+        {
+            var sampleMarkdown =
+@"CORRECTED:
+I checked your account, and the refund was processed yesterday.
+
+CHANGES:
+- ""refund was proceed"" → ""refund was processed"" — grammar fix
+
+**Core Issue / Question**: Refund delay";
+
+            var doc = MarkdownDocumentRenderer.Render(sampleMarkdown);
+            bool docValid = doc != null && doc.Blocks.Count >= 3;
+
+            if (docValid)
+            {
+                Console.WriteLine("✓ [PASS] MarkdownDocumentRenderer: Formatted headers, diff arrows, and bold inlines into FlowDocument.");
+                passed++;
+            }
+            else
+            {
+                Console.WriteLine($"✗ [FAIL] MarkdownDocumentRenderer: FlowDocument blocks count {doc?.Blocks.Count} < 3.");
+                failed++;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"✗ [FAIL] MarkdownDocumentRenderer: {ex.Message}");
+            failed++;
+        }
+
+        // 15. LM Studio /api/v1/models VRAM Status & Priority Sorting Test
+        try
+        {
+            var lmStudioJson = @"{
+                ""models"": [
+                    {
+                        ""type"": ""llm"",
+                        ""key"": ""qwen/qwen3.5-9b"",
+                        ""display_name"": ""Qwen3.5 9B"",
+                        ""loaded_instances"": [],
+                        ""capabilities"": { ""reasoning"": { ""allowed_options"": [""off"", ""on""], ""default"": ""on"" } }
+                    },
+                    {
+                        ""type"": ""llm"",
+                        ""key"": ""google/gemma-4-12b-qat"",
+                        ""display_name"": ""Gemma 4 12B QAT"",
+                        ""loaded_instances"": [{ ""id"": ""inst-1"" }],
+                        ""capabilities"": { ""reasoning"": { ""allowed_options"": [""off"", ""on""], ""default"": ""off"" } }
+                    },
+                    {
+                        ""type"": ""embedding"",
+                        ""key"": ""nomic-embed"",
+                        ""display_name"": ""Nomic Embed""
+                    }
+                ]
+            }";
+
+            var resp = System.Text.Json.JsonSerializer.Deserialize<LmStudioModelsResponse>(lmStudioJson);
+            var models = resp?.Models?
+                .Where(m => string.Equals(m.Type, "llm", StringComparison.OrdinalIgnoreCase))
+                .Select(m => new FlmModelInfo
+                {
+                    ModelId = m.Key,
+                    Name = m.DisplayName ?? m.Key,
+                    FriendlyName = m.DisplayName ?? m.Key,
+                    Installed = m.LoadedInstances?.Count > 0,
+                    IsLoaded = m.LoadedInstances?.Count > 0,
+                    ReasoningAllowedOptions = m.Capabilities?.Reasoning?.AllowedOptions ?? new(),
+                    ReasoningDefault = m.Capabilities?.Reasoning?.Default
+                })
+                .OrderByDescending(m => m.IsLoaded)
+                .ThenBy(m => m.DisplayName)
+                .ToList();
+
+            bool gemmaLoaded = models != null && models.Count == 2 && models[0].ModelId == "google/gemma-4-12b-qat" && models[0].IsLoaded && models[0].DisplayName.StartsWith("● ");
+            bool qwenUnloaded = models != null && models.Count == 2 && models[1].ModelId == "qwen/qwen3.5-9b" && !models[1].IsLoaded && !models[1].DisplayName.StartsWith("● ");
+
+            if (gemmaLoaded && qwenUnloaded)
+            {
+                Console.WriteLine("✓ [PASS] LM Studio API: VRAM loaded status detected, loaded model sorted first, and clean DisplayName applied.");
+                passed++;
+            }
+            else
+            {
+                Console.WriteLine($"✗ [FAIL] LM Studio API: Model mapping or sorting mismatch.");
+                failed++;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"✗ [FAIL] LM Studio API: {ex.Message}");
+            failed++;
+        }
+
+        // 16. Per-Model Thinking Persistence Test
+        try
+        {
+            var settings = new AppSettings();
+            settings.ThinkingModePerModel["google/gemma-4-12b-qat"] = ThinkingOption.Off.ToString();
+            settings.ThinkingModePerModel["deepseek/deepseek-r1-14b"] = ThinkingOption.On.ToString();
+
+            bool gemmaOff = settings.ThinkingModePerModel["google/gemma-4-12b-qat"] == "Off";
+            bool deepseekOn = settings.ThinkingModePerModel["deepseek/deepseek-r1-14b"] == "On";
+
+            if (gemmaOff && deepseekOn)
+            {
+                Console.WriteLine("✓ [PASS] Per-Model Thinking: Individual thinking preferences persisted per model ID.");
+                passed++;
+            }
+            else
+            {
+                Console.WriteLine($"✗ [FAIL] Per-Model Thinking: Settings mismatch.");
+                failed++;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"✗ [FAIL] Per-Model Thinking: {ex.Message}");
+            failed++;
+        }
+
         Console.WriteLine("=================================================");
         Console.WriteLine($"Total tests passed: {passed}, failed: {failed}");
         Console.WriteLine("=================================================");

@@ -610,7 +610,10 @@ public partial class MainWindow : Window
         }
         else
         {
-            SetThinkingOption(ThinkingOption.Off);
+            var defaultOpt = string.Equals(model.ReasoningDefault, "on", StringComparison.OrdinalIgnoreCase)
+                ? ThinkingOption.On
+                : ThinkingOption.Off;
+            SetThinkingOption(defaultOpt);
         }
     }
 
@@ -725,7 +728,10 @@ public partial class MainWindow : Window
                 LblInputTitle.Text = "Draft";
                 TxtDraftWatermark.Text = "Type or paste your customer reply draft here...";
                 TxtImproveBtn.Text = "Improve";
+                BtnViewText.Content = "Text";
+                BtnViewDiff.Content = "Diff";
                 PanelDiffSwitch.Visibility = Visibility.Visible;
+                SetDiffView(false);
                 break;
 
             case AppMode.DetailedReview:
@@ -734,8 +740,17 @@ public partial class MainWindow : Window
                 LblInputTitle.Text = "Draft";
                 TxtDraftWatermark.Text = "Type or paste your customer reply draft here...";
                 TxtImproveBtn.Text = "Review";
-                PanelDiffSwitch.Visibility = Visibility.Collapsed;
-                SetDiffView(false);
+                BtnViewText.Content = "Raw";
+                BtnViewDiff.Content = "Styled";
+                PanelDiffSwitch.Visibility = Visibility.Visible;
+                if (!string.IsNullOrWhiteSpace(_replyResultBuffer))
+                {
+                    RenderMarkdownView(_replyResultBuffer);
+                }
+                else
+                {
+                    SetDiffView(false);
+                }
                 break;
 
             case AppMode.Summarize:
@@ -744,8 +759,17 @@ public partial class MainWindow : Window
                 LblInputTitle.Text = "Customer's message";
                 TxtDraftWatermark.Text = "Paste the customer's verbose inquiry or ticket to summarize...";
                 TxtImproveBtn.Text = "Summarize";
-                PanelDiffSwitch.Visibility = Visibility.Collapsed;
-                SetDiffView(false);
+                BtnViewText.Content = "Raw";
+                BtnViewDiff.Content = "Styled";
+                PanelDiffSwitch.Visibility = Visibility.Visible;
+                if (!string.IsNullOrWhiteSpace(_summarizeResultBuffer))
+                {
+                    RenderMarkdownView(_summarizeResultBuffer);
+                }
+                else
+                {
+                    SetDiffView(false);
+                }
                 break;
         }
     }
@@ -1337,11 +1361,21 @@ public partial class MainWindow : Window
 
         var progress = new Progress<StreamChunkEventArgs>(args =>
         {
+            if (!string.IsNullOrEmpty(args.StatusMessage))
+            {
+                TxtStatus.Text = args.StatusMessage;
+                if (string.IsNullOrEmpty(_accumulatedResult))
+                {
+                    TxtResultEmpty.Visibility = Visibility.Visible;
+                    TxtResultEmpty.Text = $"{args.StatusMessage} ▋";
+                }
+            }
+
             if (args.IsThinking)
             {
                 _isThinking = true;
                 _thinkingChars = args.ThinkingCharCount;
-                TxtStatus.Text = $"Thinking... ({args.ThinkingCharCount} chars)";
+                TxtStatus.Text = string.IsNullOrEmpty(args.StatusMessage) ? $"Thinking... ({args.ThinkingCharCount} chars)" : args.StatusMessage;
                 TxtHeaderStats.Text = $"Thinking... ({args.ThinkingCharCount} chars)";
                 if (string.IsNullOrEmpty(_accumulatedResult))
                 {
@@ -1353,7 +1387,7 @@ public partial class MainWindow : Window
             {
                 _isThinking = false;
                 TxtResultEmpty.Visibility = Visibility.Collapsed;
-                TxtStatus.Text = "Writing...";
+                TxtStatus.Text = _currentMode == AppMode.Summarize ? "Summarizing..." : "Writing...";
                 _accumulatedResult += args.Content;
                 TxtResult.Text = _accumulatedResult + " ▋";
                 TxtResult.ScrollToEnd();
@@ -1413,6 +1447,10 @@ public partial class MainWindow : Window
             if (_currentMode == AppMode.QuickFix)
             {
                 RenderVisualDiff(draftText, cleanedOutput);
+            }
+            else
+            {
+                RenderMarkdownView(cleanedOutput);
             }
 
             var historyItem = new HistoryItem
@@ -1525,6 +1563,14 @@ public partial class MainWindow : Window
         RtfDiff.Document = doc;
     }
 
+    private void RenderMarkdownView(string markdown)
+    {
+        if (string.IsNullOrWhiteSpace(markdown)) return;
+        var doc = MarkdownDocumentRenderer.Render(markdown);
+        RtfDiff.Document = doc;
+        SetDiffView(true);
+    }
+
     private void BtnViewText_Click(object sender, RoutedEventArgs e)
     {
         SetDiffView(false);
@@ -1532,6 +1578,16 @@ public partial class MainWindow : Window
 
     private void BtnViewDiff_Click(object sender, RoutedEventArgs e)
     {
+        if (_currentMode != AppMode.QuickFix)
+        {
+            var text = _currentMode == AppMode.Summarize ? _summarizeResultBuffer : _replyResultBuffer;
+            if (string.IsNullOrEmpty(text)) text = TxtResult.Text;
+            if (!string.IsNullOrEmpty(text))
+            {
+                RenderMarkdownView(text);
+                return;
+            }
+        }
         SetDiffView(true);
     }
 
@@ -1706,6 +1762,10 @@ public partial class MainWindow : Window
                 if (item.Mode == AppMode.QuickFix)
                 {
                     RenderVisualDiff(item.OriginalText, item.ResultText);
+                }
+                else
+                {
+                    RenderMarkdownView(item.ResultText);
                 }
                 OverlayHistory.Visibility = Visibility.Collapsed;
             };

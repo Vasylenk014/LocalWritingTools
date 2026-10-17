@@ -22,10 +22,25 @@ public class FlmModelInfo
     [JsonPropertyName("details")]
     public FlmModelDetails? Details { get; set; }
 
+    public bool IsLoaded { get; set; }
+    public string FriendlyName { get; set; } = string.Empty;
+    public List<string> ReasoningAllowedOptions { get; set; } = new();
+    public string? ReasoningDefault { get; set; }
+
     // Computed display properties
-    public string DisplayName => (Installed ? "● " : "⏬ ") + (string.IsNullOrEmpty(ModelId) ? Name : ModelId);
+    public string DisplayName
+    {
+        get
+        {
+            var title = !string.IsNullOrWhiteSpace(FriendlyName) ? FriendlyName : (string.IsNullOrEmpty(ModelId) ? Name : ModelId);
+            if (IsLoaded) return $"● {title}";
+            if (!string.IsNullOrWhiteSpace(FriendlyName)) return title;
+            return (Installed ? "● " : "⏬ ") + title;
+        }
+    }
 
     public bool SupportsThinking =>
+        (ReasoningAllowedOptions.Count > 0) ||
         (Details?.Think == true) ||
         (Details?.ThinkToggleable == true) ||
         ModelId.Contains("qwen3", StringComparison.OrdinalIgnoreCase) ||
@@ -86,4 +101,43 @@ public class OpenAiModelItem
 
     [JsonPropertyName("owned_by")]
     public string OwnedBy { get; set; } = string.Empty;
+}
+
+public class LmStudioModelsResponse
+{
+    [JsonPropertyName("models")]
+    public List<LmStudioModelItem>? Models { get; set; }
+}
+
+public class LmStudioModelItem
+{
+    [JsonPropertyName("type")]
+    public string? Type { get; set; }
+
+    [JsonPropertyName("key")]
+    public string Key { get; set; } = string.Empty;
+
+    [JsonPropertyName("display_name")]
+    public string? DisplayName { get; set; }
+
+    [JsonPropertyName("loaded_instances")]
+    public List<object>? LoadedInstances { get; set; }
+
+    [JsonPropertyName("capabilities")]
+    public LmStudioCapabilities? Capabilities { get; set; }
+}
+
+public class LmStudioCapabilities
+{
+    [JsonPropertyName("reasoning")]
+    public LmStudioReasoning? Reasoning { get; set; }
+}
+
+public class LmStudioReasoning
+{
+    [JsonPropertyName("allowed_options")]
+    public List<string>? AllowedOptions { get; set; }
+
+    [JsonPropertyName("default")]
+    public string? Default { get; set; }
 }

@@ -55,6 +55,7 @@ public class StreamChunkEventArgs : EventArgs
     public int ThinkingCharCount { get; set; }
     public GenerationStats? Stats { get; set; }
     public bool IsDone { get; set; }
+    public string? StatusMessage { get; set; }
 }
 
 public enum ServerState
@@ -430,6 +431,53 @@ public class FlmApiService
             }
         }
 
+        // For LM Studio, query native /api/v1/models to detect VRAM loaded status and reasoning capabilities
+        if (_currentProvider == LlmProvider.LmStudio)
+        {
+            try
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Get, $"{_currentBaseUrl}/api/v1/models");
+                if (!string.IsNullOrEmpty(_apiKey))
+                {
+                    req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                }
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                cts.CancelAfter(TimeSpan.FromSeconds(3));
+
+                var response = await _httpClient.SendAsync(req, cts.Token);
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                    var lmStudioList = JsonSerializer.Deserialize<LmStudioModelsResponse>(json);
+                    if (lmStudioList?.Models != null && lmStudioList.Models.Count > 0)
+                    {
+                        var list = lmStudioList.Models
+                            .Where(m => string.Equals(m.Type, "llm", StringComparison.OrdinalIgnoreCase))
+                            .Select(m =>
+                            {
+                                bool isLoaded = m.LoadedInstances != null && m.LoadedInstances.Count > 0;
+                                return new FlmModelInfo
+                                {
+                                    ModelId = m.Key,
+                                    Name = m.DisplayName ?? m.Key,
+                                    FriendlyName = m.DisplayName ?? m.Key,
+                                    Installed = isLoaded,
+                                    IsLoaded = isLoaded,
+                                    ReasoningAllowedOptions = m.Capabilities?.Reasoning?.AllowedOptions ?? new(),
+                                    ReasoningDefault = m.Capabilities?.Reasoning?.Default
+                                };
+                            }).ToList();
+
+                        return FilterAndSortModels(list);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to query /api/v1/models: {ex.Message}");
+            }
+        }
+
         // Query GET /v1/models from server (standard for LM Studio, FastFlowLM, Ollama, etc.)
         try
         {
@@ -478,10 +526,11 @@ public class FlmApiService
                    !id.StartsWith("smolvla");
         }).ToList();
 
-        // Installed models on top, then alphabetical
+        // Loaded in VRAM first, then installed on disk, then alphabetical
         return filtered
-            .OrderByDescending(m => m.Installed)
-            .ThenBy(m => m.ModelId)
+            .OrderByDescending(m => m.IsLoaded)
+            .ThenByDescending(m => m.Installed)
+            .ThenBy(m => m.DisplayName)
             .ToList();
     }
 
@@ -531,6 +580,30 @@ public class FlmApiService
     }
 
     public async Task StreamCompletionAsync(
+        string model,
+        string systemPrompt,
+        string userPrompt,
+        ThinkingOption thinkingOption,
+        IProgress<StreamChunkEventArgs> progress,
+        CancellationToken cancellationToken)
+    {
+        if (_currentProvider == LlmProvider.LmStudio)
+        {
+            try
+            {
+                await StreamLmStudioNativeAsync(model, systemPrompt, userPrompt, thinkingOption, progress, cancellationToken);
+                return;
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                Debug.WriteLine("/api/v1/chat not found, falling back to /v1/chat/completions");
+            }
+        }
+
+        await StreamOpenAiCompatibleAsync(model, systemPrompt, userPrompt, thinkingOption, progress, cancellationToken);
+    }
+
+    private async Task StreamOpenAiCompatibleAsync(
         string model,
         string systemPrompt,
         string userPrompt,
@@ -765,6 +838,157 @@ public class FlmApiService
         {
             finalStats.CompletionTokens = tokenCount;
         }
+        if (finalStats.SpeedTps <= 0 && tokenCount > 0 && stopwatch.Elapsed.TotalSeconds > 0)
+        {
+            var genDuration = Math.Max(0.1, stopwatch.Elapsed.TotalSeconds - finalStats.TtftSeconds);
+            finalStats.SpeedTps = tokenCount / genDuration;
+        }
+
+        progress.Report(new StreamChunkEventArgs
+        {
+            IsDone = true,
+            Stats = finalStats
+        });
+    }
+
+    private async Task StreamLmStudioNativeAsync(
+        string model,
+        string systemPrompt,
+        string userPrompt,
+        ThinkingOption thinkingOption,
+        IProgress<StreamChunkEventArgs> progress,
+        CancellationToken cancellationToken)
+    {
+        var requestObj = new Dictionary<string, object>
+        {
+            ["model"] = model,
+            ["system_prompt"] = systemPrompt,
+            ["input"] = userPrompt,
+            ["temperature"] = 0.2,
+            ["stream"] = true,
+            ["store"] = false
+        };
+
+        if (thinkingOption == ThinkingOption.Off)
+        {
+            requestObj["reasoning"] = "off";
+        }
+        else if (thinkingOption == ThinkingOption.On || thinkingOption == ThinkingOption.Low)
+        {
+            requestObj["reasoning"] = "low";
+        }
+        else if (thinkingOption == ThinkingOption.Medium)
+        {
+            requestObj["reasoning"] = "medium";
+        }
+        else if (thinkingOption == ThinkingOption.High)
+        {
+            requestObj["reasoning"] = "high";
+        }
+        // If ThinkingOption.Auto, omit "reasoning" so model uses default
+
+        var jsonBody = JsonSerializer.Serialize(requestObj);
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"{_currentBaseUrl}/api/v1/chat")
+        {
+            Content = new StringContent(jsonBody, Encoding.UTF8, "application/json")
+        };
+        if (!string.IsNullOrEmpty(_apiKey))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+        }
+
+        var stopwatch = Stopwatch.StartNew();
+        int thinkingChars = 0;
+        int tokenCount = 0;
+        double ttft = 0;
+        GenerationStats? finalStats = null;
+
+        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+
+        string? line;
+        while ((line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != null)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            if (line.StartsWith("data: "))
+            {
+                var payload = line.Substring(6).Trim();
+                if (payload == "[DONE]") break;
+
+                try
+                {
+                    using var doc = JsonDocument.Parse(payload);
+                    var root = doc.RootElement;
+                    if (root.TryGetProperty("type", out var typeEl))
+                    {
+                        var eventType = typeEl.GetString();
+                        switch (eventType)
+                        {
+                            case "model_load.start":
+                                progress.Report(new StreamChunkEventArgs { StatusMessage = "Loading model into VRAM..." });
+                                break;
+                            case "model_load.progress":
+                                double prog = root.TryGetProperty("progress", out var pEl) ? pEl.GetDouble() : 0;
+                                progress.Report(new StreamChunkEventArgs { StatusMessage = $"Loading model into VRAM... {(int)(prog * 100)}%" });
+                                break;
+                            case "prompt_processing.start":
+                                progress.Report(new StreamChunkEventArgs { StatusMessage = "Processing prompt..." });
+                                break;
+                            case "reasoning.start":
+                                progress.Report(new StreamChunkEventArgs { IsThinking = true, StatusMessage = "Thinking..." });
+                                break;
+                            case "reasoning.delta":
+                                var rContent = root.TryGetProperty("content", out var rcEl) ? rcEl.GetString() ?? "" : "";
+                                thinkingChars += rContent.Length;
+                                progress.Report(new StreamChunkEventArgs
+                                {
+                                    IsThinking = true,
+                                    ThinkingCharCount = thinkingChars,
+                                    ReasoningContent = rContent,
+                                    StatusMessage = $"Thinking... ({thinkingChars} chars)"
+                                });
+                                break;
+                            case "message.start":
+                                progress.Report(new StreamChunkEventArgs { IsThinking = false, StatusMessage = "Writing..." });
+                                break;
+                            case "message.delta":
+                                if (ttft == 0) ttft = stopwatch.Elapsed.TotalSeconds;
+                                tokenCount++;
+                                var mContent = root.TryGetProperty("content", out var mcEl) ? mcEl.GetString() ?? "" : "";
+                                progress.Report(new StreamChunkEventArgs { Content = mContent, IsThinking = false });
+                                break;
+                            case "chat.end":
+                                if (root.TryGetProperty("result", out var resEl) && resEl.TryGetProperty("stats", out var stEl))
+                                {
+                                    finalStats = new GenerationStats
+                                    {
+                                        TotalDuration = stopwatch.Elapsed
+                                    };
+                                    if (stEl.TryGetProperty("tokensPerSecond", out var tpsEl) && tpsEl.TryGetDouble(out var tps)) finalStats.SpeedTps = tps;
+                                    if (stEl.TryGetProperty("timeToFirstTokenSeconds", out var ttftEl) && ttftEl.TryGetDouble(out var ttftVal)) finalStats.TtftSeconds = ttftVal;
+                                    if (stEl.TryGetProperty("totalTokens", out var totTokEl) && totTokEl.TryGetInt32(out var tot)) finalStats.TotalTokens = tot;
+                                    if (stEl.TryGetProperty("completionTokens", out var compTokEl) && compTokEl.TryGetInt32(out var comp)) finalStats.CompletionTokens = comp;
+                                    else if (stEl.TryGetProperty("reasoningOutputTokens", out var rtokEl) && rtokEl.TryGetInt32(out var rtok)) finalStats.CompletionTokens = rtok + tokenCount;
+                                }
+                                break;
+                            case "error":
+                                var errMsg = root.TryGetProperty("error", out var errEl) && errEl.TryGetProperty("message", out var mEl) ? mEl.GetString() : "LM Studio API error";
+                                throw new InvalidOperationException($"LM Studio Error: {errMsg}");
+                        }
+                    }
+                }
+                catch (JsonException) { }
+            }
+        }
+
+        stopwatch.Stop();
+        finalStats ??= new GenerationStats { TotalDuration = stopwatch.Elapsed };
+        if (finalStats.TtftSeconds <= 0 && ttft > 0) finalStats.TtftSeconds = ttft;
+        if (finalStats.CompletionTokens <= 0) finalStats.CompletionTokens = tokenCount;
         if (finalStats.SpeedTps <= 0 && tokenCount > 0 && stopwatch.Elapsed.TotalSeconds > 0)
         {
             var genDuration = Math.Max(0.1, stopwatch.Elapsed.TotalSeconds - finalStats.TtftSeconds);
