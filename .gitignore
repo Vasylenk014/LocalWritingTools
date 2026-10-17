@@ -23,6 +23,8 @@ xcuserdata/
 [Oo]bj/
 [Dd]ebug/
 [Rr]elease/
+[Pp]ublish/
+[Pp]ublish-standalone/
 *.user
 *.suo
 *.userosscache
@@ -33,6 +35,7 @@ TestResults/
 *.nupkg
 *.exe
 *.dll
+*.pdb
 
 # Python (if Windows version uses Python / PySide)
 __pycache__/
