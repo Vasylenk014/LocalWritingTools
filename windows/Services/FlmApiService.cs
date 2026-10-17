@@ -873,7 +873,11 @@ public class FlmApiService
         {
             requestObj["reasoning"] = "off";
         }
-        else if (thinkingOption == ThinkingOption.On || thinkingOption == ThinkingOption.Low)
+        else if (thinkingOption == ThinkingOption.On)
+        {
+            requestObj["reasoning"] = "on";
+        }
+        else if (thinkingOption == ThinkingOption.Low)
         {
             requestObj["reasoning"] = "low";
         }
@@ -904,7 +908,21 @@ public class FlmApiService
         GenerationStats? finalStats = null;
 
         using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errBody = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                using var errDoc = JsonDocument.Parse(errBody);
+                if (errDoc.RootElement.TryGetProperty("error", out var errObj) &&
+                    errObj.TryGetProperty("message", out var msgEl))
+                {
+                    throw new InvalidOperationException($"LM Studio Error: {msgEl.GetString()}");
+                }
+            }
+            catch (JsonException) { }
+            throw new InvalidOperationException($"LM Studio HTTP {(int)response.StatusCode}: {errBody}");
+        }
 
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         using var reader = new StreamReader(stream, Encoding.UTF8);
