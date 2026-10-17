@@ -8,7 +8,7 @@ APP_NAME="WritingTools"
 APP_DIR="${APP_NAME}.app/Contents"
 MACOS_DIR="${APP_DIR}/MacOS"
 RESOURCES_DIR="${APP_DIR}/Resources"
-ICON_SRC="/Users/vasyl/.gemini/antigravity/brain/5f0a3ea8-8639-4cd1-b9b9-635af978beb3/writing_tools_icon_1791670969171.jpg"
+ICON_SRC="${ICON_SRC:-AppIcon.png}"
 
 echo "Setting up Swift Package..."
 cat <<EOF > Package.swift
@@ -75,7 +75,7 @@ cat <<EOF > "${APP_DIR}/Info.plist"
     <key>CFBundleExecutable</key>
     <string>${APP_NAME}</string>
     <key>CFBundleIdentifier</key>
-    <string>com.vasyl.${APP_NAME}</string>
+    <string>com.localwritingtools.${APP_NAME}</string>
     <key>CFBundleName</key>
     <string>${APP_NAME}</string>
     <key>CFBundlePackageType</key>
