@@ -50,6 +50,8 @@ public partial class MainWindow : Window
     private readonly SystemMetricsService _metricsService;
     private AppMode _editingPromptMode = AppMode.QuickFix;
     private bool _cursorVisible = true;
+    private bool _isThinking;
+    private int _thinkingChars;
 
     // Buffer separation: QuickFix and DetailedReview share draft/result, Summarize maintains its own
     private string _replyDraftBuffer = string.Empty;
@@ -587,7 +589,13 @@ public partial class MainWindow : Window
 
     private void UpdateThinkingControlForModel(FlmModelInfo? model)
     {
-        if (model == null || !model.SupportsThinking)
+        bool showThinking = model != null && (
+            _flmService.CurrentProvider == LlmProvider.LmStudio ||
+            _flmService.CurrentProvider == LlmProvider.Custom ||
+            model.SupportsThinking
+        );
+
+        if (!showThinking || model == null)
         {
             RowThinking.Visibility = Visibility.Collapsed;
             return;
@@ -1274,6 +1282,11 @@ public partial class MainWindow : Window
             systemPrompt += toneInstruction;
         }
 
+        if (_selectedThinkingOption == ThinkingOption.Off)
+        {
+            systemPrompt += "\n\nImportant: Do not output internal reasoning, thought process, or thought tags. Provide the final response directly.";
+        }
+
         // Build User Prompt
         string userPrompt;
         var contextText = TxtContext.Text.Trim();
@@ -1291,6 +1304,8 @@ public partial class MainWindow : Window
 
         // Start typing animation cursor (blinks every 350ms while writing)
         _cursorVisible = true;
+        _isThinking = false;
+        _thinkingChars = 0;
         _typingAnimationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
         _typingAnimationTimer.Tick += (s, ev) =>
         {
@@ -1301,6 +1316,11 @@ public partial class MainWindow : Window
                 {
                     TxtResultEmpty.Visibility = Visibility.Collapsed;
                     TxtResult.Text = _accumulatedResult + (_cursorVisible ? " ▋" : "  ");
+                }
+                else if (_isThinking)
+                {
+                    TxtResultEmpty.Visibility = Visibility.Visible;
+                    TxtResultEmpty.Text = $"🧠 Thinking... ({_thinkingChars} chars)" + (_cursorVisible ? " ▋" : "  ");
                 }
                 else
                 {
@@ -1315,6 +1335,8 @@ public partial class MainWindow : Window
         {
             if (args.IsThinking)
             {
+                _isThinking = true;
+                _thinkingChars = args.ThinkingCharCount;
                 TxtStatus.Text = $"Thinking... ({args.ThinkingCharCount} chars)";
                 TxtHeaderStats.Text = $"Thinking... ({args.ThinkingCharCount} chars)";
                 if (string.IsNullOrEmpty(_accumulatedResult))
@@ -1325,6 +1347,7 @@ public partial class MainWindow : Window
             }
             else if (!string.IsNullOrEmpty(args.Content))
             {
+                _isThinking = false;
                 TxtResultEmpty.Visibility = Visibility.Collapsed;
                 TxtStatus.Text = "Writing...";
                 _accumulatedResult += args.Content;
@@ -1342,14 +1365,17 @@ public partial class MainWindow : Window
 
         try
         {
-            await _flmService.StreamCompletionAsync(
-                model.ModelId,
-                systemPrompt,
-                userPrompt,
-                _selectedThinkingOption,
-                progress,
-                _streamCts.Token
-            );
+            await Task.Run(async () =>
+            {
+                await _flmService.StreamCompletionAsync(
+                    model.ModelId,
+                    systemPrompt,
+                    userPrompt,
+                    _selectedThinkingOption,
+                    progress,
+                    _streamCts.Token
+                ).ConfigureAwait(false);
+            }, _streamCts.Token);
 
             _typingAnimationTimer?.Stop();
             _typingAnimationTimer = null;

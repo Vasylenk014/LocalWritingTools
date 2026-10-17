@@ -28,10 +28,19 @@ public class FlmModelInfo
     public bool SupportsThinking =>
         (Details?.Think == true) ||
         (Details?.ThinkToggleable == true) ||
-        ModelId.StartsWith("qwen3", StringComparison.OrdinalIgnoreCase) ||
-        ModelId.StartsWith("gemma4", StringComparison.OrdinalIgnoreCase) ||
-        ModelId.StartsWith("minicpm", StringComparison.OrdinalIgnoreCase) ||
-        ModelId.StartsWith("gpt-oss", StringComparison.OrdinalIgnoreCase);
+        ModelId.Contains("qwen3", StringComparison.OrdinalIgnoreCase) ||
+        ModelId.Contains("qwen-3", StringComparison.OrdinalIgnoreCase) ||
+        ModelId.Contains("qwq", StringComparison.OrdinalIgnoreCase) ||
+        ModelId.Contains("gemma4", StringComparison.OrdinalIgnoreCase) ||
+        ModelId.Contains("gemma-4", StringComparison.OrdinalIgnoreCase) ||
+        ModelId.Contains("minicpm", StringComparison.OrdinalIgnoreCase) ||
+        ModelId.Contains("gpt-oss", StringComparison.OrdinalIgnoreCase) ||
+        ModelId.Contains("deepseek-r1", StringComparison.OrdinalIgnoreCase) ||
+        ModelId.Contains("deepseek-reasoner", StringComparison.OrdinalIgnoreCase) ||
+        ModelId.Contains("r1", StringComparison.OrdinalIgnoreCase) ||
+        ModelId.Contains("reason", StringComparison.OrdinalIgnoreCase) ||
+        ModelId.Contains("think", StringComparison.OrdinalIgnoreCase) ||
+        ModelId.Contains("thought", StringComparison.OrdinalIgnoreCase);
 }
 
 public class FlmModelDetails

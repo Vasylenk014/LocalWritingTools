@@ -71,14 +71,18 @@ CHANGES:
 
             var dirtyOutput = "<think>thinking process...</think>```\n\"Cleaned text without fences\"\n```";
             var cleaned = SmartCopyService.CleanArtifacts(dirtyOutput);
-            if (cleaned == "Cleaned text without fences")
+
+            var gemmaOutput = "<thought>deep reasoning about tone...</thought>Cleaned Gemma text";
+            var gemmaCleaned = SmartCopyService.CleanArtifacts(gemmaOutput);
+
+            if (cleaned == "Cleaned text without fences" && gemmaCleaned == "Cleaned Gemma text")
             {
-                Console.WriteLine("✓ [PASS] SmartCopyService: Removed <think> tags, code fences, and quotes.");
+                Console.WriteLine("✓ [PASS] SmartCopyService: Removed <think>, <thought>, code fences, and quotes.");
                 passed++;
             }
             else
             {
-                Console.WriteLine($"✗ [FAIL] SmartCopyService: Cleaned mismatch: '{cleaned}'");
+                Console.WriteLine($"✗ [FAIL] SmartCopyService: Cleaned mismatch: '{cleaned}', gemma: '{gemmaCleaned}'");
                 failed++;
             }
         }

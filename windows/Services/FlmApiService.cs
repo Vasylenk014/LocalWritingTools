@@ -553,30 +553,37 @@ public class FlmApiService
             ["stream_options"] = new { include_usage = true }
         };
 
-        // Thinking parameter mapping according to PRD
+        // Thinking parameter mapping according to PRD & LM Studio / OpenAI standard
         switch (thinkingOption)
         {
             case ThinkingOption.Off:
                 requestObj["think"] = false;
+                requestObj["chat_template_kwargs"] = new Dictionary<string, object> { ["thinking"] = false };
+                requestObj["reasoning_effort"] = "none";
                 break;
             case ThinkingOption.On:
                 requestObj["think"] = true;
+                requestObj["chat_template_kwargs"] = new Dictionary<string, object> { ["thinking"] = true };
+                requestObj["reasoning_effort"] = "medium";
                 break;
             case ThinkingOption.Low:
                 requestObj["think"] = true;
+                requestObj["chat_template_kwargs"] = new Dictionary<string, object> { ["thinking"] = true };
                 requestObj["reasoning_effort"] = "low";
                 break;
             case ThinkingOption.Medium:
                 requestObj["think"] = true;
+                requestObj["chat_template_kwargs"] = new Dictionary<string, object> { ["thinking"] = true };
                 requestObj["reasoning_effort"] = "medium";
                 break;
             case ThinkingOption.High:
                 requestObj["think"] = true;
+                requestObj["chat_template_kwargs"] = new Dictionary<string, object> { ["thinking"] = true };
                 requestObj["reasoning_effort"] = "high";
                 break;
             case ThinkingOption.Auto:
             default:
-                // Omit think parameter
+                // Omit think parameter to let model decide
                 break;
         }
 
@@ -596,19 +603,17 @@ public class FlmApiService
         int thinkingChars = 0;
         bool inThinkTag = false;
 
-        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
-        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         using var reader = new StreamReader(stream, Encoding.UTF8);
 
         GenerationStats? finalStats = null;
 
-        while (!reader.EndOfStream)
+        string? line;
+        while ((line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != null)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var line = await reader.ReadLineAsync(cancellationToken);
             if (string.IsNullOrWhiteSpace(line)) continue;
 
             // Detect and throw FastFlowLM error payloads (e.g. {"error":"..."})
@@ -701,8 +706,10 @@ public class FlmApiService
                             }
                             else if (!string.IsNullOrEmpty(content))
                             {
-                                // Detect <think> tags in standard content
-                                if (content.Contains("<think>"))
+                                // Detect <think>, <thought>, <reasoning> tags in standard content
+                                if (content.Contains("<think>", StringComparison.OrdinalIgnoreCase) ||
+                                    content.Contains("<thought>", StringComparison.OrdinalIgnoreCase) ||
+                                    content.Contains("<reasoning>", StringComparison.OrdinalIgnoreCase))
                                 {
                                     inThinkTag = true;
                                 }
@@ -717,7 +724,9 @@ public class FlmApiService
                                         ThinkingCharCount = thinkingChars
                                     });
 
-                                    if (content.Contains("</think>"))
+                                    if (content.Contains("</think>", StringComparison.OrdinalIgnoreCase) ||
+                                        content.Contains("</thought>", StringComparison.OrdinalIgnoreCase) ||
+                                        content.Contains("</reasoning>", StringComparison.OrdinalIgnoreCase))
                                     {
                                         inThinkTag = false;
                                     }

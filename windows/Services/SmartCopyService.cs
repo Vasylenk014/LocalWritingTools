@@ -50,8 +50,11 @@ public static class SmartCopyService
 
         var result = text;
 
-        // Remove <think>...</think> blocks
+        // Remove <think>...</think>, <thought>...</thought>, and <reasoning>...</reasoning> blocks
         result = Regex.Replace(result, @"<think>.*?</think>", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"<thought>.*?</thought>", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"<reasoning>.*?</reasoning>", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"<(think|thought|reasoning)>.*?$", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
         // Remove <draft> and </draft> tags
         result = Regex.Replace(result, @"</?draft>", "", RegexOptions.IgnoreCase);
