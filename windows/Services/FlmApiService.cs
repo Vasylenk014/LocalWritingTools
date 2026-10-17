@@ -549,6 +549,7 @@ public class FlmApiService
             ["model"] = model,
             ["messages"] = messages,
             ["temperature"] = 0.2,
+            ["max_tokens"] = 2048,
             ["stream"] = true,
             ["stream_options"] = new { include_usage = true }
         };
@@ -564,7 +565,7 @@ public class FlmApiService
             case ThinkingOption.On:
                 requestObj["think"] = true;
                 requestObj["chat_template_kwargs"] = new Dictionary<string, object> { ["thinking"] = true };
-                requestObj["reasoning_effort"] = "medium";
+                requestObj["reasoning_effort"] = "low";
                 break;
             case ThinkingOption.Low:
                 requestObj["think"] = true;

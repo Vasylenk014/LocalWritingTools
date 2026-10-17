@@ -1286,6 +1286,10 @@ public partial class MainWindow : Window
         {
             systemPrompt += "\n\nImportant: Do not output internal reasoning, thought process, or thought tags. Provide the final response directly.";
         }
+        else if (_selectedThinkingOption == ThinkingOption.On)
+        {
+            systemPrompt += "\n\nKeep your internal thinking concise (under 150 words), then output the final rewritten text.";
+        }
 
         // Build User Prompt
         string userPrompt;
@@ -1380,12 +1384,22 @@ public partial class MainWindow : Window
             _typingAnimationTimer?.Stop();
             _typingAnimationTimer = null;
 
-            TxtStatus.Text = "Generation complete";
-
             var cleanedOutput = SmartCopyService.CleanArtifacts(_accumulatedResult);
-            TxtResult.Text = cleanedOutput;
-            TxtResult.ScrollToEnd();
-            _accumulatedResult = cleanedOutput;
+            if (string.IsNullOrWhiteSpace(cleanedOutput))
+            {
+                TxtResultEmpty.Visibility = Visibility.Visible;
+                TxtResultEmpty.Text = "⚠ No rewritten text produced. For writing tools, setting Thinking to 'Off' is recommended.";
+                TxtStatus.Text = "Generation complete (no text produced)";
+                TxtResult.Clear();
+            }
+            else
+            {
+                TxtResultEmpty.Visibility = Visibility.Collapsed;
+                TxtResult.Text = cleanedOutput;
+                TxtResult.ScrollToEnd();
+                _accumulatedResult = cleanedOutput;
+                TxtStatus.Text = "Generation complete";
+            }
 
             if (_currentMode == AppMode.Summarize)
             {
