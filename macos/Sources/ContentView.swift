@@ -96,7 +96,19 @@ struct ContentView: View {
                 .help("● = loaded in memory")
             }
             Spacer()
+            if vm.hasLoadedModels {
+                Button {
+                    vm.unloadAllModels()
+                } label: {
+                    Image(systemName: "eject")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .help("Unload models from GPU VRAM")
+                .disabled(vm.isUnloading)
+            }
             Button { vm.fetchModels() } label: { Image(systemName: "arrow.clockwise") }
+                .buttonStyle(.plain)
                 .help("Refresh models")
         }
     }

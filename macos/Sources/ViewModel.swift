@@ -148,6 +148,7 @@ struct LMModel: Identifiable, Hashable {
     let key: String
     let displayName: String
     let isLoaded: Bool
+    let loadedInstanceIds: [String]
     let reasoningOptions: [String]
     let reasoningDefault: String?
     var id: String { key }
@@ -237,6 +238,7 @@ final class ViewModel: ObservableObject {
     @Published var isProcessing = false
     @Published var isServerOnline = false
     @Published var availableModels: [LMModel] = []
+    @Published var isUnloading = false
     @Published var copied = false
     @Published var showPrompt = false
     @Published var showDiff = false
@@ -303,6 +305,10 @@ final class ViewModel: ObservableObject {
             return saved
         }
         set { reasoningByModel[selectedModel] = newValue }
+    }
+
+    var hasLoadedModels: Bool {
+        availableModels.contains { $0.isLoaded }
     }
 
     var canRun: Bool {
@@ -457,9 +463,11 @@ final class ViewModel: ObservableObject {
                 let models = try decoder.decode(ModelsResponse.self, from: data).models
                     .filter { $0.type == "llm" }
                     .map { item in
-                        LMModel(key: item.key,
+                        let instanceIds = (item.loadedInstances ?? []).map { $0.id }
+                        return LMModel(key: item.key,
                                 displayName: item.displayName ?? item.key,
-                                isLoaded: !(item.loadedInstances ?? []).isEmpty,
+                                isLoaded: !instanceIds.isEmpty,
+                                loadedInstanceIds: instanceIds,
                                 reasoningOptions: item.capabilities?.reasoning?.allowedOptions ?? [],
                                 reasoningDefault: item.capabilities?.reasoning?.default)
                     }
@@ -472,6 +480,33 @@ final class ViewModel: ObservableObject {
                 availableModels = []
                 isServerOnline = false
                 errorText = "LM Studio server is not reachable at \(serverURL). Start it in LM Studio → Developer → Start Server."
+            }
+        }
+    }
+
+    func unloadAllModels() {
+        let allInstances = availableModels.flatMap { $0.loadedInstanceIds }
+        guard !allInstances.isEmpty, !isUnloading else { return }
+        isUnloading = true
+        statusText = "Freeing VRAM…"
+
+        Task {
+            for instId in allInstances {
+                guard let url = URL(string: serverURL + "/api/v1/models/unload") else { continue }
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                let body = ["instance_id": instId]
+                request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+                _ = try? await URLSession.shared.data(for: request)
+            }
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            fetchModels()
+            isUnloading = false
+            statusText = "VRAM freed ✓"
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            if statusText == "VRAM freed ✓" {
+                statusText = nil
             }
         }
     }
