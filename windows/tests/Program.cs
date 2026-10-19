@@ -99,19 +99,23 @@ CHANGES:
             var cleanedSpaces = TextTransformService.CleanExtraSpaces(text);
             var straightened = TextTransformService.StraightenQuotes("«hello» and “quotes”");
             var titleCase = TextTransformService.CapitalizeWords("quick brown fox");
+            var allCapsTitleCase = TextTransformService.CapitalizeWords("HELLO WORLD");
+            var mixedTitleCase = TextTransformService.CapitalizeWords("sUPER cOOL");
             var sentenceCase = TextTransformService.ToSentenceCase("hello world. HOW ARE YOU? fine! ok.");
 
             if (!cleanedSpaces.Contains("   ") &&
                 straightened == "\"hello\" and \"quotes\"" &&
                 titleCase == "Quick Brown Fox" &&
+                allCapsTitleCase == "Hello World" &&
+                mixedTitleCase == "Super Cool" &&
                 sentenceCase.StartsWith("Hello world. How are you? Fine! Ok."))
             {
-                Console.WriteLine("✓ [PASS] TextTransformService: Spaces, quotes, and case transformations match specification.");
+                Console.WriteLine("✓ [PASS] TextTransformService: Spaces, quotes, and case transformations match specification (including ALL-CAPS words).");
                 passed++;
             }
             else
             {
-                Console.WriteLine("✗ [FAIL] TextTransformService mismatch.");
+                Console.WriteLine($"✗ [FAIL] TextTransformService mismatch (all-caps: '{allCapsTitleCase}', title: '{titleCase}').");
                 failed++;
             }
         }
@@ -129,16 +133,21 @@ CHANGES:
             var drPrompt = settings.GetSystemPrompt(AppMode.DetailedReview);
             var sumPrompt = settings.GetSystemPrompt(AppMode.Summarize);
 
+            bool noZendesk = !qfPrompt.Contains("Zendesk", StringComparison.OrdinalIgnoreCase) &&
+                             !drPrompt.Contains("Zendesk", StringComparison.OrdinalIgnoreCase) &&
+                             !sumPrompt.Contains("Zendesk", StringComparison.OrdinalIgnoreCase);
+
             if (qfPrompt.Contains("<draft></draft>") &&
                 drPrompt.Contains("CORRECTED:") &&
-                sumPrompt.Contains("Core Issue"))
+                sumPrompt.Contains("Core Issue") &&
+                noZendesk)
             {
-                Console.WriteLine("✓ [PASS] AppSettings: System prompts match the 1-to-1 PRD specification.");
+                Console.WriteLine("✓ [PASS] AppSettings: System prompts match specification with zero proprietary branding.");
                 passed++;
             }
             else
             {
-                Console.WriteLine("✗ [FAIL] AppSettings: System prompt content missing required markers.");
+                Console.WriteLine("✗ [FAIL] AppSettings: System prompt content missing required markers or contains legacy branding.");
                 failed++;
             }
         }
@@ -584,6 +593,46 @@ CHANGES:
         catch (Exception ex)
         {
             Console.WriteLine($"✗ [FAIL] Per-Model Thinking: {ex.Message}");
+            failed++;
+        }
+
+        // 17. LM Studio Loaded Instance Serialization & Unload Capability
+        try
+        {
+            var rawJson = @"{
+                ""models"": [
+                    {
+                        ""type"": ""llm"",
+                        ""key"": ""google/gemma-4-12b-qat"",
+                        ""loaded_instances"": [{ ""id"": ""inst-gemma-1"" }]
+                    },
+                    {
+                        ""type"": ""llm"",
+                        ""key"": ""qwen/qwen3.5-9b"",
+                        ""loaded_instances"": []
+                    }
+                ]
+            }";
+
+            var parsed = System.Text.Json.JsonSerializer.Deserialize<LmStudioModelsResponse>(rawJson);
+            bool gemmaHasInstance = parsed?.Models?[0].LoadedInstances?.Count == 1 &&
+                                    parsed?.Models?[0].LoadedInstances?[0].Id == "inst-gemma-1";
+            bool qwenEmptyInstances = parsed?.Models?[1].LoadedInstances?.Count == 0;
+
+            if (gemmaHasInstance && qwenEmptyInstances)
+            {
+                Console.WriteLine("✓ [PASS] LM Studio Model Management: LoadedInstances typed IDs correctly parsed for GPU memory ejection.");
+                passed++;
+            }
+            else
+            {
+                Console.WriteLine("✗ [FAIL] LM Studio Model Management: Instance ID deserialization failed.");
+                failed++;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"✗ [FAIL] LM Studio Model Management: {ex.Message}");
             failed++;
         }
 

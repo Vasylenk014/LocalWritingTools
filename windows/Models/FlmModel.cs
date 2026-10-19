@@ -121,10 +121,16 @@ public class LmStudioModelItem
     public string? DisplayName { get; set; }
 
     [JsonPropertyName("loaded_instances")]
-    public List<object>? LoadedInstances { get; set; }
+    public List<LmStudioLoadedInstance>? LoadedInstances { get; set; }
 
     [JsonPropertyName("capabilities")]
     public LmStudioCapabilities? Capabilities { get; set; }
+}
+
+public class LmStudioLoadedInstance
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
 }
 
 public class LmStudioCapabilities

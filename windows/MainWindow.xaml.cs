@@ -422,14 +422,14 @@ public partial class MainWindow : Window
             case LlmProvider.LmStudio:
                 TxtProviderBadge.Text = "🎮 LM Studio";
                 if (PanelFlmControls != null) PanelFlmControls.Visibility = Visibility.Collapsed;
-                if (BdLmStudioStatus != null) BdLmStudioStatus.Visibility = Visibility.Visible;
+                if (PanelLmStudioControls != null) PanelLmStudioControls.Visibility = Visibility.Visible;
                 if (LblComputeDevice != null) LblComputeDevice.Text = "GPU:";
                 break;
 
             case LlmProvider.Custom:
                 TxtProviderBadge.Text = "🌐 Custom";
                 if (PanelFlmControls != null) PanelFlmControls.Visibility = Visibility.Collapsed;
-                if (BdLmStudioStatus != null) BdLmStudioStatus.Visibility = Visibility.Visible;
+                if (PanelLmStudioControls != null) PanelLmStudioControls.Visibility = Visibility.Collapsed;
                 if (LblComputeDevice != null) LblComputeDevice.Text = "GPU:";
                 break;
 
@@ -437,7 +437,7 @@ public partial class MainWindow : Window
             default:
                 TxtProviderBadge.Text = "⚡ NPU";
                 if (PanelFlmControls != null) PanelFlmControls.Visibility = Visibility.Visible;
-                if (BdLmStudioStatus != null) BdLmStudioStatus.Visibility = Visibility.Collapsed;
+                if (PanelLmStudioControls != null) PanelLmStudioControls.Visibility = Visibility.Collapsed;
                 if (LblComputeDevice != null) LblComputeDevice.Text = "NPU:";
                 break;
         }
@@ -537,6 +537,28 @@ public partial class MainWindow : Window
         {
             ShowNotificationBanner("⚠ Server stop incomplete. Check Task Manager.", false);
             TxtStatus.Text = "Server stop warning";
+        }
+    }
+
+    private async void BtnUnloadLmStudio_Click(object sender, RoutedEventArgs e)
+    {
+        BtnUnloadLmStudio.IsEnabled = false;
+        TxtStatus.Text = "Unloading models from LM Studio and freeing GPU memory...";
+        var progress = new Progress<string>(msg => TxtStatus.Text = msg);
+
+        bool stopped = await _flmService.StopServerAsync(progress);
+        await RefreshModelsAndServerAsync();
+        BtnUnloadLmStudio.IsEnabled = true;
+
+        if (stopped)
+        {
+            ShowNotificationBanner("✓ LM Studio models unloaded. GPU VRAM released.", true);
+            TxtStatus.Text = "Models unloaded (VRAM freed)";
+        }
+        else
+        {
+            ShowNotificationBanner("⚠ Unload warning. Make sure LM Studio is running.", false);
+            TxtStatus.Text = "Unload warning";
         }
     }
 
@@ -1403,6 +1425,21 @@ public partial class MainWindow : Window
 
         try
         {
+            if (_flmService.CurrentProvider == LlmProvider.LmStudio)
+            {
+                var lmProgress = new Progress<string>(msg =>
+                {
+                    TxtStatus.Text = msg;
+                    if (string.IsNullOrEmpty(_accumulatedResult))
+                    {
+                        TxtResultEmpty.Visibility = Visibility.Visible;
+                        TxtResultEmpty.Text = $"{msg} ▋";
+                    }
+                });
+
+                await _flmService.EnsureLmStudioModelReadyAsync(model.ModelId, lmProgress, _streamCts.Token);
+            }
+
             await Task.Run(async () =>
             {
                 await _flmService.StreamCompletionAsync(

@@ -374,9 +374,22 @@ public class FlmApiService
 
     public async Task<bool> StopServerAsync(IProgress<string>? progress = null)
     {
+        if (_currentProvider == LlmProvider.LmStudio)
+        {
+            progress?.Report("Unloading models from LM Studio and freeing GPU memory...");
+            bool ok = await UnloadAllLmStudioModelsAsync(null, progress);
+            if (ok)
+            {
+                progress?.Report("LM Studio models unloaded. GPU memory freed.");
+                return true;
+            }
+            progress?.Report("Failed to unload all LM Studio models.");
+            return false;
+        }
+
         if (_currentProvider != LlmProvider.FastFlowLmNpu)
         {
-            progress?.Report($"{_currentProvider} server is managed externally. Use the Stop button in LM Studio.");
+            progress?.Report($"{_currentProvider} server is managed externally.");
             return true;
         }
 
@@ -410,6 +423,190 @@ public class FlmApiService
         return false;
     }
 
+    public async Task<List<LmStudioModelItem>?> GetLmStudioModelsRawAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, $"{_currentBaseUrl}/api/v1/models");
+            if (!string.IsNullOrEmpty(_apiKey))
+            {
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+            }
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(3));
+
+            var response = await _httpClient.SendAsync(req, cts.Token);
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                var lmStudioList = JsonSerializer.Deserialize<LmStudioModelsResponse>(json);
+                return lmStudioList?.Models;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to query /api/v1/models: {ex.Message}");
+        }
+        return null;
+    }
+
+    public async Task<bool> UnloadLmStudioModelInstanceAsync(string instanceId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var body = JsonSerializer.Serialize(new { instance_id = instanceId });
+            using var req = new HttpRequestMessage(HttpMethod.Post, $"{_currentBaseUrl}/api/v1/models/unload")
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            };
+            if (!string.IsNullOrEmpty(_apiKey))
+            {
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+            }
+            using var response = await _httpClient.SendAsync(req, cancellationToken);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to unload model instance '{instanceId}': {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<bool> UnloadAllLmStudioModelsAsync(string? exceptModelKey = null, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
+    {
+        var rawModels = await GetLmStudioModelsRawAsync(cancellationToken);
+        if (rawModels == null) return true;
+
+        var instancesToUnload = new List<(string modelName, string instanceId)>();
+        foreach (var m in rawModels)
+        {
+            if (exceptModelKey != null && string.Equals(m.Key, exceptModelKey, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+            if (m.LoadedInstances != null)
+            {
+                foreach (var inst in m.LoadedInstances)
+                {
+                    if (!string.IsNullOrWhiteSpace(inst.Id))
+                    {
+                        instancesToUnload.Add((m.DisplayName ?? m.Key, inst.Id));
+                    }
+                }
+            }
+        }
+
+        if (instancesToUnload.Count == 0)
+        {
+            return true;
+        }
+
+        foreach (var (modelName, instId) in instancesToUnload)
+        {
+            progress?.Report($"Unloading '{modelName}' from GPU memory...");
+            await UnloadLmStudioModelInstanceAsync(instId, cancellationToken);
+        }
+
+        // Poll /api/v1/models until instances are unloaded (up to 8s)
+        var sw = Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < 8000)
+        {
+            await Task.Delay(250, cancellationToken);
+            var updated = await GetLmStudioModelsRawAsync(cancellationToken);
+            if (updated == null) break;
+
+            bool stillLoaded = false;
+            foreach (var m in updated)
+            {
+                if (exceptModelKey != null && string.Equals(m.Key, exceptModelKey, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (m.LoadedInstances != null && m.LoadedInstances.Any(i => instancesToUnload.Any(u => u.instanceId == i.Id)))
+                {
+                    stillLoaded = true;
+                    break;
+                }
+            }
+
+            if (!stillLoaded)
+            {
+                break;
+            }
+        }
+
+        // Wait a grace period for CUDA / GPU driver memory manager to finish reclaiming VRAM pages
+        progress?.Report("Waiting for GPU VRAM to clear completely...");
+        await Task.Delay(800, cancellationToken);
+        progress?.Report("GPU memory cleared.");
+        return true;
+    }
+
+    public async Task<bool> LoadLmStudioModelAsync(string modelKey, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            progress?.Report($"Loading '{modelKey}' into GPU memory (~5-10s)...");
+            var body = JsonSerializer.Serialize(new { model = modelKey });
+            using var req = new HttpRequestMessage(HttpMethod.Post, $"{_currentBaseUrl}/api/v1/models/load")
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            };
+            if (!string.IsNullOrEmpty(_apiKey))
+            {
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+            }
+            using var response = await _httpClient.SendAsync(req, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                await Task.Delay(500, cancellationToken);
+                progress?.Report($"Model '{modelKey}' ready in GPU memory.");
+                return true;
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                Debug.WriteLine($"Failed to load model '{modelKey}': HTTP {(int)response.StatusCode} {err}");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to load model '{modelKey}': {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task<bool> EnsureLmStudioModelReadyAsync(string targetModelKey, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
+    {
+        var rawModels = await GetLmStudioModelsRawAsync(cancellationToken);
+        if (rawModels == null) return false;
+
+        var targetModel = rawModels.FirstOrDefault(m => string.Equals(m.Key, targetModelKey, StringComparison.OrdinalIgnoreCase));
+        bool isTargetLoaded = targetModel?.LoadedInstances != null && targetModel.LoadedInstances.Count > 0;
+
+        // Check if any other models are loaded
+        bool otherModelsLoaded = rawModels.Any(m =>
+            !string.Equals(m.Key, targetModelKey, StringComparison.OrdinalIgnoreCase) &&
+            m.LoadedInstances != null && m.LoadedInstances.Count > 0);
+
+        if (otherModelsLoaded)
+        {
+            // Unload all other models and wait for VRAM to clear completely
+            await UnloadAllLmStudioModelsAsync(exceptModelKey: targetModelKey, progress, cancellationToken);
+        }
+
+        // If target is not loaded, load it explicitly into VRAM now
+        if (!isTargetLoaded)
+        {
+            bool loaded = await LoadLmStudioModelAsync(targetModelKey, progress, cancellationToken);
+            return loaded;
+        }
+
+        progress?.Report($"Model '{targetModelKey}' is ready in GPU VRAM.");
+        return true;
+    }
+
     private void SetState(ServerState state)
     {
         if (CurrentState != state)
@@ -434,47 +631,27 @@ public class FlmApiService
         // For LM Studio, query native /api/v1/models to detect VRAM loaded status and reasoning capabilities
         if (_currentProvider == LlmProvider.LmStudio)
         {
-            try
+            var rawModels = await GetLmStudioModelsRawAsync(cancellationToken);
+            if (rawModels != null && rawModels.Count > 0)
             {
-                using var req = new HttpRequestMessage(HttpMethod.Get, $"{_currentBaseUrl}/api/v1/models");
-                if (!string.IsNullOrEmpty(_apiKey))
-                {
-                    req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
-                }
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                cts.CancelAfter(TimeSpan.FromSeconds(3));
-
-                var response = await _httpClient.SendAsync(req, cts.Token);
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadAsStringAsync(cancellationToken);
-                    var lmStudioList = JsonSerializer.Deserialize<LmStudioModelsResponse>(json);
-                    if (lmStudioList?.Models != null && lmStudioList.Models.Count > 0)
+                var list = rawModels
+                    .Where(m => string.Equals(m.Type, "llm", StringComparison.OrdinalIgnoreCase))
+                    .Select(m =>
                     {
-                        var list = lmStudioList.Models
-                            .Where(m => string.Equals(m.Type, "llm", StringComparison.OrdinalIgnoreCase))
-                            .Select(m =>
-                            {
-                                bool isLoaded = m.LoadedInstances != null && m.LoadedInstances.Count > 0;
-                                return new FlmModelInfo
-                                {
-                                    ModelId = m.Key,
-                                    Name = m.DisplayName ?? m.Key,
-                                    FriendlyName = m.DisplayName ?? m.Key,
-                                    Installed = isLoaded,
-                                    IsLoaded = isLoaded,
-                                    ReasoningAllowedOptions = m.Capabilities?.Reasoning?.AllowedOptions ?? new(),
-                                    ReasoningDefault = m.Capabilities?.Reasoning?.Default
-                                };
-                            }).ToList();
+                        bool isLoaded = m.LoadedInstances != null && m.LoadedInstances.Count > 0;
+                        return new FlmModelInfo
+                        {
+                            ModelId = m.Key,
+                            Name = m.DisplayName ?? m.Key,
+                            FriendlyName = m.DisplayName ?? m.Key,
+                            Installed = isLoaded,
+                            IsLoaded = isLoaded,
+                            ReasoningAllowedOptions = m.Capabilities?.Reasoning?.AllowedOptions ?? new(),
+                            ReasoningDefault = m.Capabilities?.Reasoning?.Default
+                        };
+                    }).ToList();
 
-                        return FilterAndSortModels(list);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to query /api/v1/models: {ex.Message}");
+                return FilterAndSortModels(list);
             }
         }
 

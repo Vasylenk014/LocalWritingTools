@@ -15,7 +15,7 @@ public static class TextTransformService
     {
         if (string.IsNullOrEmpty(input)) return input;
         var textInfo = CultureInfo.CurrentCulture.TextInfo;
-        return textInfo.ToTitleCase(input);
+        return textInfo.ToTitleCase(input.ToLower(CultureInfo.CurrentCulture));
     }
 
     public static string ToSentenceCase(string input)

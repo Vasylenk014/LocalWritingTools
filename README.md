@@ -5,7 +5,7 @@
 [![Engine: LM Studio & FastFlowLM](https://img.shields.io/badge/Engine-LM%20Studio%20GPU%20%7C%20FastFlowLM%20NPU-orange.svg)](#-getting-started)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](#-license)
 
-> **Local Writing Tools** is a private, lightweight writing companion designed specifically for customer support specialists (e.g. Zendesk). It connects to locally hosted LLMs via **FastFlowLM (AMD Ryzen AI NPU)** on laptops or **LM Studio (NVIDIA/AMD GPU)** on desktop PCs to refine, edit, and summarize support drafts instantly with **zero cloud dependencies**, zero subscription fees, and no risk of customer data leaks.
+> **Local Writing Tools** is a private, lightweight writing companion designed specifically for customer support specialists and professional communications. It connects to locally hosted LLMs via **FastFlowLM (AMD Ryzen AI NPU)** on laptops or **LM Studio (NVIDIA/AMD GPU)** on desktop PCs to refine, edit, and summarize drafts instantly with **zero cloud dependencies**, zero subscription fees, and no risk of customer data leaks.
 
 ---
 
@@ -22,9 +22,9 @@ Customer support teams handle sensitive customer information, ticket threads, or
 
 ## ✨ Features
 
-- ⚡️ **Global Hotkey Workflow:** Select any text anywhere (Zendesk, email, browser), press `⌥⌘G` (macOS) or `Alt+Shift+G` (Windows), and the app automatically grabs your clipboard, generates an improved response, and copies it back to your clipboard (`Auto-copy`).
+- ⚡️ **Global Hotkey Workflow:** Select any text anywhere (support portals, email, browser), press `⌥⌘G` (macOS) or `Alt+Shift+G` (Windows), and the app automatically grabs your clipboard, generates an improved response, and copies it back to your clipboard (`Auto-copy`).
 - 🛠️ **3 Purpose-Built Support Modes:**
-  - **Quick Fix:** Grammatical correction, clarity, and tone improvements while strictly preserving original meaning, length, facts, and Zendesk placeholders (`{{ticket.requester.first_name}}`).
+  - **Quick Fix:** Grammatical correction, clarity, and tone improvements while strictly preserving original meaning, length, facts, and dynamic placeholders (`{{customer.first_name}}`, `{{ticket_id}}`).
   - **Detailed Review:** Structured feedback broken down into: `CORRECTED`, `CONCISE`, `CHANGES` (with grammar/style rationale), and `NOTES`.
   - **Summarize:** Extracts core issues, key details, and the customer's goal from lengthy, AI-generated customer messages in 5 seconds (with buffer isolation from reply drafts).
 - 🔀 **Universal Multi-Provider Architecture (Windows):**

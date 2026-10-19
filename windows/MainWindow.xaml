@@ -543,14 +543,23 @@
                     </Button>
                 </StackPanel>
 
-                <!-- LM Studio / Custom status badge -->
-                <Border x:Name="BdLmStudioStatus" Visibility="Collapsed"
-                        Background="{StaticResource BgPillBrush}" BorderBrush="{StaticResource BorderBrush}"
-                        BorderThickness="1" CornerRadius="7" Padding="8,4"
-                        ToolTip="External Server Status">
-                    <TextBlock x:Name="TxtLmStudioStatus" Text="LM Studio :1234" FontSize="11" FontWeight="Medium"
-                               Foreground="{StaticResource TextSecondaryBrush}"/>
-                </Border>
+                <!-- LM Studio Controls (Status + Free VRAM) -->
+                <StackPanel x:Name="PanelLmStudioControls" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0" Visibility="Collapsed">
+                    <Border x:Name="BdLmStudioStatus"
+                            Background="{StaticResource BgPillBrush}" BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1" CornerRadius="7" Padding="8,4"
+                            ToolTip="External Server Status">
+                        <TextBlock x:Name="TxtLmStudioStatus" Text="LM Studio :1234" FontSize="11" FontWeight="Medium"
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </Border>
+                    <Button x:Name="BtnUnloadLmStudio" Click="BtnUnloadLmStudio_Click"
+                            Style="{StaticResource DarkPillButton}" Margin="4,0,0,0" Padding="8,4"
+                            ToolTip="Unload model from GPU memory and free VRAM">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="⏏ Free VRAM" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource RedBrush}"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </StackPanel>
 
             <!-- System Settings Configuration Button -->
