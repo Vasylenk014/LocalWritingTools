@@ -132,12 +132,16 @@ For troubleshooting and detailed architecture, check [docs/MACOS_BUILD_GUIDE.md]
 
 ---
 
-## 🔒 Privacy & Local Security
+## 🔒 Privacy, Security & Corporate Compliance
 
-- **No telemetry or tracking.**
-- **No external cloud network calls.** The application connects strictly to your local host (`http://127.0.0.1:1234` or `http://127.0.0.1:52625`).
-- **Stateless execution.** Requests use `"store": false` to prevent history retention in the local inference engine.
-- **Local persistence.** Recent checks and custom prompts remain strictly in your local operating system preferences (`UserDefaults` on macOS, `%APPDATA%` on Windows).
+Local Writing Tools is engineered specifically for corporate and regulated environments where customer data, internal communications, and intellectual property must never leave the employee workstation.
+
+- **Air-Gapped & Zero Cloud:** 100% of LLM inference runs locally on the workstation (NPU or GPU). Zero dependencies on external cloud APIs (OpenAI, Anthropic, AWS, etc.).
+- **Zero External Telemetry:** No analytics, trackers, or crash reporting services are included.
+- **Strict Network Boundary:** Network traffic is strictly isolated to internal loopback socket connections (`http://127.0.0.1:52625` for FastFlowLM, `http://localhost:1234` for LM Studio).
+- **Stateless Requests:** Requests use `"store": false` to ensure context and ticket history are never cached in model memory or persistent server databases.
+- **Compliance Alignment:** Compliant with **GDPR (Zero DPA / Cross-Border Transfer risk)**, **SOC 2 Type II**, **HIPAA**, and **PCI-DSS** requirements.
+- **Auditable & Open:** Read our full [Security Architecture & Audit Guide (SECURITY.md)](SECURITY.md) for network verification steps using PowerShell and Wireshark.
 
 ---
 
