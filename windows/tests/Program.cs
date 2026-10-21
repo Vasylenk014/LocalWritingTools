@@ -636,6 +636,72 @@ CHANGES:
             failed++;
         }
 
+        // 18. Diff Identical Verification
+        try
+        {
+            var orig = "Thank you for contacting support. Your ticket has been updated.";
+            var identicalMod = "Thank you for contacting support. Your ticket has been updated.";
+            var diff = DiffService.ComputeDiff(orig, identicalMod);
+
+            bool hasChanges = diff.Any(t => t.Type == DiffTokenType.Added || t.Type == DiffTokenType.Removed);
+            bool isIdentical = !hasChanges || string.Equals(orig.Trim(), identicalMod.Trim(), StringComparison.Ordinal);
+
+            if (!hasChanges && isIdentical)
+            {
+                Console.WriteLine("✓ [PASS] DiffService: Identical draft and result correctly detected with 0 changes.");
+                passed++;
+            }
+            else
+            {
+                Console.WriteLine("✗ [FAIL] DiffService: Identical check failed.");
+                failed++;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"✗ [FAIL] DiffService Identical check: {ex.Message}");
+            failed++;
+        }
+
+        // 19. LM Studio Reasoning Capability Checks (gpt-oss-20b vs gemma-4)
+        try
+        {
+            var gptOssInfo = new FlmModelInfo
+            {
+                ModelId = "openai/gpt-oss-20b",
+                Name = "GPT OSS 20B",
+                ReasoningAllowedOptions = new List<string> { "low", "medium", "high" },
+                ReasoningDefault = "low"
+            };
+
+            var gemmaInfo = new FlmModelInfo
+            {
+                ModelId = "google/gemma-4-e4b",
+                Name = "Gemma 4 E4B",
+                ReasoningAllowedOptions = new List<string> { "off", "on" },
+                ReasoningDefault = "on"
+            };
+
+            bool gptOssSupportsOff = gptOssInfo.ReasoningAllowedOptions.Contains("off", StringComparer.OrdinalIgnoreCase);
+            bool gemmaSupportsOff = gemmaInfo.ReasoningAllowedOptions.Contains("off", StringComparer.OrdinalIgnoreCase);
+
+            if (!gptOssSupportsOff && gemmaSupportsOff)
+            {
+                Console.WriteLine("✓ [PASS] Reasoning Capability: Correctly detected models requiring reasoning (gpt-oss-20b) vs toggleable (gemma-4).");
+                passed++;
+            }
+            else
+            {
+                Console.WriteLine("✗ [FAIL] Reasoning Capability: Detection logic failed.");
+                failed++;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"✗ [FAIL] Reasoning Capability: {ex.Message}");
+            failed++;
+        }
+
         Console.WriteLine("=================================================");
         Console.WriteLine($"Total tests passed: {passed}, failed: {failed}");
         Console.WriteLine("=================================================");

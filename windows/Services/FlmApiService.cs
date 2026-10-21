@@ -70,6 +70,7 @@ public class FlmApiService
     public const string DefaultBaseUrl = "http://127.0.0.1:52625";
     private readonly HttpClient _httpClient;
     private Process? _serverProcess;
+    private readonly Dictionary<string, LmStudioModelItem> _lmStudioModelCache = new(StringComparer.OrdinalIgnoreCase);
 
     private string _currentBaseUrl = DefaultBaseUrl;
     private LlmProvider _currentProvider = LlmProvider.FastFlowLmNpu;
@@ -440,6 +441,20 @@ public class FlmApiService
             {
                 var json = await response.Content.ReadAsStringAsync(cancellationToken);
                 var lmStudioList = JsonSerializer.Deserialize<LmStudioModelsResponse>(json);
+                if (lmStudioList?.Models != null)
+                {
+                    lock (_lmStudioModelCache)
+                    {
+                        _lmStudioModelCache.Clear();
+                        foreach (var m in lmStudioList.Models)
+                        {
+                            if (!string.IsNullOrEmpty(m.Key))
+                            {
+                                _lmStudioModelCache[m.Key] = m;
+                            }
+                        }
+                    }
+                }
                 return lmStudioList?.Models;
             }
         }
@@ -448,6 +463,22 @@ public class FlmApiService
             Debug.WriteLine($"Failed to query /api/v1/models: {ex.Message}");
         }
         return null;
+    }
+
+    public LmStudioModelItem? GetCachedLmStudioModel(string? modelKey)
+    {
+        if (string.IsNullOrWhiteSpace(modelKey)) return null;
+        lock (_lmStudioModelCache)
+        {
+            if (_lmStudioModelCache.TryGetValue(modelKey, out var item))
+            {
+                return item;
+            }
+            return _lmStudioModelCache.Values.FirstOrDefault(m =>
+                string.Equals(m.Key, modelKey, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(m.DisplayName, modelKey, StringComparison.OrdinalIgnoreCase) ||
+                (m.Key != null && m.Key.EndsWith("/" + modelKey, StringComparison.OrdinalIgnoreCase)));
+        }
     }
 
     public async Task<bool> UnloadLmStudioModelInstanceAsync(string instanceId, CancellationToken cancellationToken = default)
@@ -1046,13 +1077,50 @@ public class FlmApiService
             ["store"] = false
         };
 
+        var cachedModel = GetCachedLmStudioModel(model);
+        if (cachedModel == null)
+        {
+            try
+            {
+                await GetLmStudioModelsRawAsync(cancellationToken).ConfigureAwait(false);
+                cachedModel = GetCachedLmStudioModel(model);
+            }
+            catch { }
+        }
+
+        var allowed = cachedModel?.Capabilities?.Reasoning?.AllowedOptions;
+        bool hasAllowedOptions = allowed != null && allowed.Count > 0;
+        bool allowsOff = !hasAllowedOptions || allowed!.Contains("off", StringComparer.OrdinalIgnoreCase);
+        bool allowsOn = !hasAllowedOptions || allowed!.Contains("on", StringComparer.OrdinalIgnoreCase);
+
         if (thinkingOption == ThinkingOption.Off)
         {
-            requestObj["reasoning"] = "off";
+            if (allowsOff)
+            {
+                requestObj["reasoning"] = "off";
+            }
+            // For models requiring reasoning (e.g. gpt-oss-20b only supports low/medium/high),
+            // omitting "reasoning" defaults to the model's native level and avoids HTTP 400.
         }
         else if (thinkingOption == ThinkingOption.On)
         {
-            requestObj["reasoning"] = "on";
+            if (allowsOn)
+            {
+                requestObj["reasoning"] = "on";
+            }
+            else
+            {
+                // Fall back to default level (e.g. "low") for models with tiered reasoning
+                var def = cachedModel?.Capabilities?.Reasoning?.Default;
+                if (!string.IsNullOrWhiteSpace(def) && allowed!.Contains(def, StringComparer.OrdinalIgnoreCase))
+                {
+                    requestObj["reasoning"] = def;
+                }
+                else if (allowed != null && allowed.Count > 0)
+                {
+                    requestObj["reasoning"] = allowed[0];
+                }
+            }
         }
         else if (thinkingOption == ThinkingOption.Low)
         {
@@ -1066,7 +1134,7 @@ public class FlmApiService
         {
             requestObj["reasoning"] = "high";
         }
-        // If ThinkingOption.Auto, omit "reasoning" so model uses default
+        // If ThinkingOption.Auto, omit "reasoning" so model uses its configured default
 
         var jsonBody = JsonSerializer.Serialize(requestObj);
         using var request = new HttpRequestMessage(HttpMethod.Post, $"{_currentBaseUrl}/api/v1/chat")

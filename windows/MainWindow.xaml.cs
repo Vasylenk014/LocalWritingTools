@@ -625,16 +625,30 @@ public partial class MainWindow : Window
 
         RowThinking.Visibility = Visibility.Visible;
 
+        bool supportsOff = model.ReasoningAllowedOptions == null ||
+                           model.ReasoningAllowedOptions.Count == 0 ||
+                           model.ReasoningAllowedOptions.Contains("off", StringComparer.OrdinalIgnoreCase);
+
+        BtnThinkingOff.IsEnabled = supportsOff;
+        BtnThinkingOff.Opacity = supportsOff ? 1.0 : 0.35;
+        BtnThinkingOff.ToolTip = supportsOff
+            ? "Disable model internal reasoning (faster, direct output)"
+            : $"This model requires reasoning and cannot be turned off. (Supported: {string.Join(", ", model.ReasoningAllowedOptions ?? new())})";
+
         if (_settingsService.Settings.ThinkingModePerModel.TryGetValue(model.ModelId, out var savedStr) &&
             Enum.TryParse<ThinkingOption>(savedStr, out var savedOption))
         {
+            if (savedOption == ThinkingOption.Off && !supportsOff)
+            {
+                savedOption = ThinkingOption.Auto;
+            }
             SetThinkingOption(savedOption);
         }
         else
         {
             var defaultOpt = string.Equals(model.ReasoningDefault, "on", StringComparison.OrdinalIgnoreCase)
                 ? ThinkingOption.On
-                : ThinkingOption.Off;
+                : (supportsOff ? ThinkingOption.Off : ThinkingOption.Auto);
             SetThinkingOption(defaultOpt);
         }
     }
@@ -643,12 +657,25 @@ public partial class MainWindow : Window
     {
         if (sender is Button btn && btn.Tag is string tag && Enum.TryParse<ThinkingOption>(tag, out var opt))
         {
-            SetThinkingOption(opt);
-
             if (CmbModels.SelectedItem is FlmModelInfo model)
             {
+                bool supportsOff = model.ReasoningAllowedOptions == null ||
+                                   model.ReasoningAllowedOptions.Count == 0 ||
+                                   model.ReasoningAllowedOptions.Contains("off", StringComparer.OrdinalIgnoreCase);
+
+                if (opt == ThinkingOption.Off && !supportsOff)
+                {
+                    TxtStatus.Text = $"Model '{model.Name}' requires reasoning and does not support 'Off'. Switched to 'Auto'.";
+                    opt = ThinkingOption.Auto;
+                }
+
+                SetThinkingOption(opt);
                 _settingsService.Settings.ThinkingModePerModel[model.ModelId] = opt.ToString();
                 _settingsService.Save();
+            }
+            else
+            {
+                SetThinkingOption(opt);
             }
         }
     }
@@ -754,6 +781,10 @@ public partial class MainWindow : Window
                 BtnViewDiff.Content = "Diff";
                 PanelDiffSwitch.Visibility = Visibility.Visible;
                 SetDiffView(false);
+                if (!string.IsNullOrWhiteSpace(_replyDraftBuffer) || !string.IsNullOrWhiteSpace(_replyResultBuffer))
+                {
+                    RenderVisualDiff(_replyDraftBuffer, _replyResultBuffer);
+                }
                 break;
 
             case AppMode.DetailedReview:
@@ -1560,7 +1591,8 @@ public partial class MainWindow : Window
             Foreground = (SolidColorBrush)FindResource("TextPrimaryBrush")
         };
 
-        var paragraph = new Paragraph { Margin = new Thickness(0), LineHeight = 20 };
+        // Standard line height to match TxtResult without vertical stretching
+        var paragraph = new Paragraph { Margin = new Thickness(0) };
 
         // OLED Dark theme diff colors: high contrast green & red with soft dark background
         var addedBg = new SolidColorBrush(Color.FromArgb(60, 34, 197, 94)); // soft green tint
@@ -1568,6 +1600,57 @@ public partial class MainWindow : Window
 
         var removedBg = new SolidColorBrush(Color.FromArgb(60, 239, 68, 68)); // soft red tint
         var removedFg = new SolidColorBrush(Color.FromArgb(255, 252, 165, 165)); // #FCA5A5 coral
+
+        bool hasChanges = diffTokens.Any(t => t.Type == DiffTokenType.Added || t.Type == DiffTokenType.Removed);
+        bool isIdentical = !hasChanges || string.Equals(original.Trim(), modified.Trim(), StringComparison.Ordinal);
+
+        if (_currentMode == AppMode.QuickFix)
+        {
+            if (isIdentical && (!string.IsNullOrWhiteSpace(original) || !string.IsNullOrWhiteSpace(modified)))
+            {
+                BtnViewDiff.Content = "Diff (0)";
+                BtnViewDiff.ToolTip = "No changes needed — the draft is already optimal and identical to result.";
+
+                var banner = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromArgb(40, 34, 197, 94)),
+                    BorderBrush = new SolidColorBrush(Color.FromArgb(120, 34, 197, 94)),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(6),
+                    Padding = new Thickness(14, 10, 14, 10),
+                    Margin = new Thickness(0, 0, 0, 12)
+                };
+
+                var stack = new StackPanel { Orientation = Orientation.Vertical };
+                var headerText = new TextBlock
+                {
+                    Text = "✓ No changes needed — draft is already optimal!",
+                    FontSize = 13,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = new SolidColorBrush(Color.FromArgb(255, 74, 222, 128))
+                };
+                var subText = new TextBlock
+                {
+                    Text = "The generated result is 100% identical to your draft.",
+                    FontSize = 11,
+                    Foreground = new SolidColorBrush(Color.FromArgb(255, 148, 163, 184)),
+                    Margin = new Thickness(0, 3, 0, 0)
+                };
+                stack.Children.Add(headerText);
+                stack.Children.Add(subText);
+                banner.Child = stack;
+
+                doc.Blocks.Add(new BlockUIContainer(banner));
+            }
+            else
+            {
+                int additions = diffTokens.Count(t => t.Type == DiffTokenType.Added);
+                int removals = diffTokens.Count(t => t.Type == DiffTokenType.Removed);
+                int totalChanges = additions + removals;
+                BtnViewDiff.Content = totalChanges > 0 ? $"Diff ({totalChanges})" : "Diff";
+                BtnViewDiff.ToolTip = totalChanges > 0 ? $"{totalChanges} difference(s) ({additions} added, {removals} removed)" : null;
+            }
+        }
 
         foreach (var token in diffTokens)
         {
@@ -1623,6 +1706,15 @@ public partial class MainWindow : Window
             {
                 RenderMarkdownView(text);
                 return;
+            }
+        }
+        else
+        {
+            var orig = TxtDraft.Text;
+            var mod = !string.IsNullOrEmpty(_accumulatedResult) ? _accumulatedResult : TxtResult.Text;
+            if (!string.IsNullOrEmpty(orig) || !string.IsNullOrEmpty(mod))
+            {
+                RenderVisualDiff(orig, mod);
             }
         }
         SetDiffView(true);
