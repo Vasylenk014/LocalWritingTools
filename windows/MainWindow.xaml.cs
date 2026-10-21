@@ -37,6 +37,7 @@ public partial class MainWindow : Window
     private readonly GlobalHotkeyService _hotkeyService;
 
     private AppMode _currentMode = AppMode.QuickFix;
+    public AppMode CurrentMode => _currentMode;
     private TonePreset _currentTone = TonePreset.Standard;
     private ThinkingOption _selectedThinkingOption = ThinkingOption.Off;
     private CancellationTokenSource? _streamCts;
@@ -110,8 +111,8 @@ public partial class MainWindow : Window
         _metricsTimer.Start();
         UpdateSystemMetricsUI();
 
-        // Select default mode
-        SetMode(_settingsService.Settings.DefaultMode);
+        // Select default mode (always start with QuickFix on launch)
+        SetMode(AppMode.QuickFix);
 
         // Load models and check server
         await RefreshModelsAndServerAsync();
@@ -225,12 +226,18 @@ public partial class MainWindow : Window
 
     public void ShowAndActivate(string? initialText = null)
     {
+        bool wasHidden = !IsVisible || WindowState == WindowState.Minimized;
         Show();
         if (WindowState == WindowState.Minimized)
         {
             WindowState = WindowState.Normal;
         }
         Activate();
+
+        if (wasHidden)
+        {
+            SetMode(AppMode.QuickFix);
+        }
 
         if (!string.IsNullOrWhiteSpace(initialText))
         {
@@ -744,8 +751,6 @@ public partial class MainWindow : Window
         }
 
         _currentMode = mode;
-        _settingsService.Settings.DefaultMode = mode;
-        _settingsService.Save();
 
         // 2. Restore the target mode's text and results
         if (mode == AppMode.Summarize)

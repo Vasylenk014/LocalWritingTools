@@ -265,16 +265,22 @@ CHANGES:
                     window.SetMode(AppMode.Summarize);
                     bool summarizeRestored = window.DraftInputText == "Long verbose customer inquiry";
 
-                    if (detailedShared && summarizeIsolated && quickFixRestored && summarizeRestored)
+                    // Verify startup and reopen mode is always QuickFix
+                    window.SetMode(AppMode.Summarize);
+                    window.Hide();
+                    window.ShowAndActivate();
+                    bool reopensQuickFix = window.CurrentMode == AppMode.QuickFix;
+
+                    if (detailedShared && summarizeIsolated && quickFixRestored && summarizeRestored && reopensQuickFix)
                     {
-                        Console.WriteLine("✓ [PASS] Tab Isolation: QuickFix/DetailedReview share reply draft, Summarize has isolated ticket buffer.");
+                        Console.WriteLine("✓ [PASS] Tab Isolation & Default Tab: App always starts/reopens on QuickFix, tabs isolate buffers.");
                     }
                     else
                     {
-                        Console.WriteLine($"✗ [FAIL] Tab Isolation mismatch: detailedShared={detailedShared}, summarizeIsolated={summarizeIsolated}, quickFixRestored={quickFixRestored}, summarizeRestored={summarizeRestored}");
+                        Console.WriteLine($"✗ [FAIL] Tab Isolation mismatch: detailedShared={detailedShared}, summarizeIsolated={summarizeIsolated}, quickFixRestored={quickFixRestored}, summarizeRestored={summarizeRestored}, reopensQuickFix={reopensQuickFix}");
                     }
 
-                    tcs.SetResult(detailedShared && summarizeIsolated && quickFixRestored && summarizeRestored);
+                    tcs.SetResult(detailedShared && summarizeIsolated && quickFixRestored && summarizeRestored && reopensQuickFix);
                 }
                 catch (Exception ex)
                 {
