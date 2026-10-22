@@ -74,14 +74,16 @@ This document outlines the security architecture, data handling practices, and c
 
 ---
 
-## 📋 Regulatory & Compliance Alignment
+## 📋 Data Perimeter & Security Principles
 
-| Standard / Framework | Status | Compliance Details |
+The application is engineered so that sensitive information never leaves the local workstation:
+
+| Security Principle | Architecture Guarantee | Implementation Details |
 |---|---|---|
-| **GDPR (EU 2016/679)** | **Compliant** | Zero personal data is transmitted across boundaries. No third-party data processor agreements (DPA) required. |
-| **SOC 2 Type II** | **Aligned** | Zero cloud ingestion; eliminates risk of confidential customer ticket disclosure. |
-| **HIPAA / HITECH** | **Aligned** | Suitable for environments handling sensitive health or personal data, as no protected health information (PHI) leaves the workstation. |
-| **PCI-DSS** | **Aligned** | Cardholder data / payment information drafts are not transmitted over external networks. |
+| **Zero External Transmission** | **100% Local Perimeter** | Drafts, customer names, and message contents are processed exclusively in local RAM/VRAM. No packets are sent over the internet. |
+| **No Third-Party Processors** | **Zero Cloud Dependencies** | Operates entirely without OpenAI, Anthropic, AWS, or external AI APIs. No third-party Data Processing Agreements (DPA) required. |
+| **Air-Gapped Operation** | **Offline Functional** | Works with full capability on completely offline, intranet-only, or firewall-isolated workstations. |
+| **Stateless Execution** | **Zero Data Retention** | Requests are processed ephemerally in active memory. Texts are never stored, logged, or used for model retraining. |
 
 ---
 

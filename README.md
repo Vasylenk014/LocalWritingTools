@@ -140,7 +140,7 @@ Local Writing Tools is engineered specifically for corporate and regulated envir
 - **Zero External Telemetry:** No analytics, trackers, or crash reporting services are included.
 - **Strict Network Boundary:** Network traffic is strictly isolated to internal loopback socket connections (`http://127.0.0.1:52625` for FastFlowLM, `http://localhost:1234` for LM Studio).
 - **Stateless Requests:** Requests use `"store": false` to ensure context and ticket history are never cached in model memory or persistent server databases.
-- **Compliance Alignment:** Compliant with **GDPR (Zero DPA / Cross-Border Transfer risk)**, **SOC 2 Type II**, **HIPAA**, and **PCI-DSS** requirements.
+- **Zero Data Transmission (100% Local):** All drafts, prompts, and correspondence remain strictly on the local machine. The application never sends data over the internet, eliminating third-party data processor agreements (DPA) and data leak risks.
 - **Auditable & Open:** Read our full [Security Architecture & Audit Guide (SECURITY.md)](SECURITY.md) for network verification steps using PowerShell and Wireshark.
 
 ---
