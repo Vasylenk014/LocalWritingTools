@@ -30,7 +30,7 @@ windows/
 ├── WritingTools.csproj            # Проект .NET 8 (WPF + WinForms для NotifyIcon)
 ├── Models/                        # Моделі даних (AppSettings, FlmModel, HistoryItem тощо)
 ├── Services/                      # Бізнес-логіка (API, Diff, Hotkey, Metrics, SmartCopy)
-└── tests/                         # Набір автоматизованих верифікаційних тестів (13 тестів)
+└── tests/                         # Набір автоматизованих верифікаційних тестів (19 тестів)
 ```
 
 ---
