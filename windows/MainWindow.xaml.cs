@@ -263,15 +263,7 @@ public partial class MainWindow : Window
             Resources["ToastBgBrush"] = new SolidColorBrush(Color.FromRgb(24, 24, 34));
         }
 
-        if (TxtThemeBadge != null)
-        {
-            TxtThemeBadge.Text = theme switch
-            {
-                AppTheme.Light => "☀️ Light",
-                AppTheme.Dark => "🌙 Dark",
-                _ => "🌗 Auto"
-            };
-        }
+        UpdateResponsiveHeaderLayout();
 
         UpdateThemeSegmentButtons();
         ApplyDwmAttributes();
@@ -371,19 +363,44 @@ public partial class MainWindow : Window
         double winWidth = overrideWidth ?? (ActualWidth > 0 ? ActualWidth : Width);
         if (double.IsNaN(winWidth) || winWidth <= 0) winWidth = 700;
 
-        // Auto-hide static hotkey reminder badge on narrower windows (< 760px) so interactive buttons never clip
-        bool showHotkeyBadge = winWidth >= 760;
-        BdHotkeyBadge.Visibility = showHotkeyBadge ? Visibility.Visible : Visibility.Collapsed;
+        // Compact labels on narrow windows (< 640px) so CmbModels retains plenty of width
+        bool isCompact = winWidth < 640;
+        if (TxtThemeBadge != null)
+        {
+            TxtThemeBadge.Text = isCompact
+                ? (_currentTheme switch
+                {
+                    AppTheme.Light => "☀️",
+                    AppTheme.Dark => "🌙",
+                    _ => "🌗"
+                })
+                : (_currentTheme switch
+                {
+                    AppTheme.Light => "☀️ Light",
+                    AppTheme.Dark => "🌙 Dark",
+                    _ => "🌗 Auto"
+                });
+        }
 
-        // Calculate ideal clamped width for CmbModels (always readable: 130px..260px, never tiny, never overly stretched)
-        double otherControlsWidth = showHotkeyBadge ? 535 : 445;
-        double targetModelWidth = Math.Clamp(winWidth - otherControlsWidth, 130, 260);
-        CmbModels.Width = targetModelWidth;
+        if (TxtUnloadLmStudioBtn != null)
+        {
+            TxtUnloadLmStudioBtn.Text = isCompact ? "⏏ VRAM" : "⏏ Free VRAM";
+        }
+
+        // Show static hotkey reminder badge only when window is wide enough (>= 780px)
+        BdHotkeyBadge.Visibility = winWidth >= 780 ? Visibility.Visible : Visibility.Collapsed;
+
+        if (overrideWidth.HasValue)
+        {
+            Width = overrideWidth.Value;
+            Measure(new System.Windows.Size(overrideWidth.Value, 820));
+            Arrange(new System.Windows.Rect(0, 0, overrideWidth.Value, 820));
+            UpdateLayout();
+        }
     }
 
-    public double ModelDropdownWidth => CmbModels.Width;
+    public double ModelDropdownWidth => CmbModels.ActualWidth > 0 ? CmbModels.ActualWidth : CmbModels.Width;
     public bool IsHotkeyBadgeVisible => BdHotkeyBadge.Visibility == Visibility.Visible;
-
     private void BtnQuit_Click(object sender, RoutedEventArgs e)
     {
         _isExplicitExit = true;
@@ -673,6 +690,7 @@ public partial class MainWindow : Window
                 if (LblComputeDevice != null) LblComputeDevice.Text = "NPU:";
                 break;
         }
+        UpdateResponsiveHeaderLayout();
     }
 
     private void UpdateSystemMetricsUI()
@@ -2318,6 +2336,7 @@ public partial class MainWindow : Window
     private void UpdateHistoryBadge()
     {
         TxtHistoryCount.Text = _settingsService.Settings.RecentHistory.Count.ToString();
+        UpdateResponsiveHeaderLayout();
     }
 
     private void RenderHistoryList()

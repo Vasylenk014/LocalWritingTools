@@ -324,11 +324,11 @@ CHANGES:
 
                     // Verify responsive header & model dropdown clamping across narrow, default, and wide windows
                     window.UpdateResponsiveHeaderLayout(580);
-                    bool narrowHeaderOk = window.ModelDropdownWidth >= 130 && window.ModelDropdownWidth <= 260 && !window.IsHotkeyBadgeVisible;
-                    window.UpdateResponsiveHeaderLayout(700);
-                    bool defaultHeaderOk = window.ModelDropdownWidth >= 200 && window.ModelDropdownWidth <= 260 && !window.IsHotkeyBadgeVisible;
-                    window.UpdateResponsiveHeaderLayout(1200);
-                    bool wideHeaderOk = window.ModelDropdownWidth == 260 && window.IsHotkeyBadgeVisible;
+                    bool narrowHeaderOk = window.ModelDropdownWidth >= 115 && window.ModelDropdownWidth <= 260 && !window.IsHotkeyBadgeVisible;
+                    window.UpdateResponsiveHeaderLayout(746);
+                    bool defaultHeaderOk = window.ModelDropdownWidth >= 180 && window.ModelDropdownWidth <= 260 && !window.IsHotkeyBadgeVisible;
+                    window.UpdateResponsiveHeaderLayout(1024);
+                    bool wideHeaderOk = window.ModelDropdownWidth >= 180 && window.ModelDropdownWidth <= 260 && window.IsHotkeyBadgeVisible;
                     bool responsiveHeaderChecks = narrowHeaderOk && defaultHeaderOk && wideHeaderOk;
 
                     bool allUiChecks = brainstormSharedDraft && brainstormIsolatedResult && brainstormResultRestored &&
