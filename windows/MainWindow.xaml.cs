@@ -54,12 +54,16 @@ public partial class MainWindow : Window
     private bool _isThinking;
     private int _thinkingChars;
 
-    // Buffer separation: QuickFix and DetailedReview share draft text, but each mode maintains its own independent Result buffer
+    // Buffer separation: QuickFix, Brainstorm, and DetailedReview share draft text, but each mode maintains its own independent Result buffer
     private string _replyDraftBuffer = string.Empty;
     private string _quickFixResultBuffer = string.Empty;
+    private string _brainstormResultBuffer = string.Empty;
     private string _detailedResultBuffer = string.Empty;
     private string _summarizeDraftBuffer = string.Empty;
     private string _summarizeResultBuffer = string.Empty;
+
+    private AppTheme _currentTheme = AppTheme.System;
+    private bool _isLightThemeEffective;
 
     public MainWindow(FlmApiService flmService, SettingsService settingsService, GlobalHotkeyService hotkeyService)
     {
@@ -69,6 +73,9 @@ public partial class MainWindow : Window
         _settingsService = settingsService;
         _hotkeyService = hotkeyService;
         _metricsService = new SystemMetricsService();
+
+        _currentTheme = _settingsService.Settings.Theme;
+        ApplyTheme(_currentTheme);
 
         // Set application icon from IconHelper
         try
@@ -83,7 +90,9 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        ApplyTheme(_currentTheme);
         ApplyDwmAttributes();
+        Microsoft.Win32.SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
 
         // Register Global Hotkey (Alt+Shift+G)
         try
@@ -136,6 +145,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        Microsoft.Win32.SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
         _serverPollTimer?.Stop();
         _typingAnimationTimer?.Stop();
         _metricsTimer?.Stop();
@@ -151,6 +161,176 @@ public partial class MainWindow : Window
         Close();
     }
 
+    private void SystemEvents_UserPreferenceChanged(object sender, Microsoft.Win32.UserPreferenceChangedEventArgs e)
+    {
+        if (_currentTheme == AppTheme.System)
+        {
+            Dispatcher.BeginInvoke(() => ApplyTheme(AppTheme.System));
+        }
+    }
+
+    public static bool IsWindowsLightTheme()
+    {
+        try
+        {
+            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            if (key?.GetValue("AppsUseLightTheme") is int val)
+            {
+                return val == 1;
+            }
+        }
+        catch { }
+        return false;
+    }
+
+    public AppTheme CurrentTheme
+    {
+        get => _currentTheme;
+        set => SetTheme(value, saveSettings: false);
+    }
+
+    public bool IsLightThemeEffective => _isLightThemeEffective;
+
+    public void SetTheme(AppTheme theme, bool saveSettings = true)
+    {
+        _currentTheme = theme;
+        if (saveSettings)
+        {
+            _settingsService.Settings.Theme = theme;
+            _settingsService.Save();
+        }
+        ApplyTheme(theme);
+    }
+
+    private void ApplyTheme(AppTheme theme)
+    {
+        _isLightThemeEffective = theme switch
+        {
+            AppTheme.Light => true,
+            AppTheme.Dark => false,
+            _ => IsWindowsLightTheme()
+        };
+
+        if (_isLightThemeEffective)
+        {
+            Resources["BgDarkBrush"] = new SolidColorBrush(Color.FromRgb(244, 246, 249));
+            Resources["BgSurfaceBrush"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+            Resources["BgCardBrush"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+            Resources["BgSegmentTrackBrush"] = new SolidColorBrush(Color.FromRgb(226, 232, 240));
+            Resources["BgSegmentActiveBrush"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+            Resources["BgPillBrush"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+            Resources["BgPillHoverBrush"] = new SolidColorBrush(Color.FromRgb(237, 242, 247));
+            Resources["BorderBrush"] = new SolidColorBrush(Color.FromRgb(203, 213, 225));
+            Resources["BorderLightBrush"] = new SolidColorBrush(Color.FromRgb(148, 163, 184));
+            Resources["AccentBrush"] = new SolidColorBrush(Color.FromRgb(79, 70, 229));
+            Resources["AccentHoverBrush"] = new SolidColorBrush(Color.FromRgb(67, 56, 202));
+            Resources["AccentActiveBrush"] = new SolidColorBrush(Color.FromRgb(238, 242, 255));
+            Resources["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(15, 23, 42));
+            Resources["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(71, 85, 105));
+            Resources["TextMutedBrush"] = new SolidColorBrush(Color.FromRgb(100, 116, 139));
+            Resources["GreenBrush"] = new SolidColorBrush(Color.FromRgb(22, 163, 74));
+            Resources["RedBrush"] = new SolidColorBrush(Color.FromRgb(220, 38, 38));
+            Resources["YellowBrush"] = new SolidColorBrush(Color.FromRgb(217, 119, 6));
+            Resources["OverlayScrimBrush"] = new SolidColorBrush(Color.FromArgb(110, 15, 23, 42));
+            Resources["ToastBgBrush"] = new SolidColorBrush(Color.FromRgb(255, 255, 255));
+        }
+        else
+        {
+            Resources["BgDarkBrush"] = new SolidColorBrush(Color.FromRgb(10, 10, 13));
+            Resources["BgSurfaceBrush"] = new SolidColorBrush(Color.FromRgb(19, 19, 24));
+            Resources["BgCardBrush"] = new SolidColorBrush(Color.FromRgb(14, 14, 19));
+            Resources["BgSegmentTrackBrush"] = new SolidColorBrush(Color.FromRgb(24, 24, 32));
+            Resources["BgSegmentActiveBrush"] = new SolidColorBrush(Color.FromRgb(46, 46, 62));
+            Resources["BgPillBrush"] = new SolidColorBrush(Color.FromRgb(26, 26, 36));
+            Resources["BgPillHoverBrush"] = new SolidColorBrush(Color.FromRgb(36, 36, 50));
+            Resources["BorderBrush"] = new SolidColorBrush(Color.FromRgb(37, 37, 51));
+            Resources["BorderLightBrush"] = new SolidColorBrush(Color.FromRgb(52, 52, 70));
+            Resources["AccentBrush"] = new SolidColorBrush(Color.FromRgb(99, 102, 241));
+            Resources["AccentHoverBrush"] = new SolidColorBrush(Color.FromRgb(79, 70, 229));
+            Resources["AccentActiveBrush"] = new SolidColorBrush(Color.FromRgb(30, 27, 75));
+            Resources["TextPrimaryBrush"] = new SolidColorBrush(Color.FromRgb(244, 244, 246));
+            Resources["TextSecondaryBrush"] = new SolidColorBrush(Color.FromRgb(161, 161, 170));
+            Resources["TextMutedBrush"] = new SolidColorBrush(Color.FromRgb(113, 113, 122));
+            Resources["GreenBrush"] = new SolidColorBrush(Color.FromRgb(34, 197, 94));
+            Resources["RedBrush"] = new SolidColorBrush(Color.FromRgb(239, 68, 68));
+            Resources["YellowBrush"] = new SolidColorBrush(Color.FromRgb(245, 158, 11));
+            Resources["OverlayScrimBrush"] = new SolidColorBrush(Color.FromArgb(176, 0, 0, 0));
+            Resources["ToastBgBrush"] = new SolidColorBrush(Color.FromRgb(24, 24, 34));
+        }
+
+        if (TxtThemeBadge != null)
+        {
+            TxtThemeBadge.Text = theme switch
+            {
+                AppTheme.Light => "☀️ Light",
+                AppTheme.Dark => "🌙 Dark",
+                _ => "🌗 Auto"
+            };
+        }
+
+        UpdateThemeSegmentButtons();
+        ApplyDwmAttributes();
+
+        if (IsInitialized)
+        {
+            UpdateToneHighlights();
+            SetThinkingOption(_selectedThinkingOption);
+            UpdateSegmentButton(BtnModeQuickFix, _currentMode == AppMode.QuickFix);
+            UpdateSegmentButton(BtnModeBrainstorm, _currentMode == AppMode.Brainstorm);
+            UpdateSegmentButton(BtnModeDetailed, _currentMode == AppMode.DetailedReview);
+            UpdateSegmentButton(BtnModeSummarize, _currentMode == AppMode.Summarize);
+            UpdateContextVisualState();
+
+            // Refresh active diff or styled markdown view so its foregrounds match the new theme
+            if (RtfDiff != null && RtfDiff.Visibility == Visibility.Visible)
+            {
+                if (_currentMode == AppMode.QuickFix)
+                {
+                    RenderVisualDiff(TxtDraft.Text, TxtResult.Text);
+                }
+                else if (!string.IsNullOrWhiteSpace(TxtResult.Text))
+                {
+                    RenderMarkdownView(TxtResult.Text);
+                }
+            }
+            else if (BtnViewText != null && BtnViewDiff != null)
+            {
+                SetDiffView(RtfDiff?.Visibility == Visibility.Visible);
+            }
+        }
+    }
+
+    private void BtnThemeToggle_Click(object sender, RoutedEventArgs e)
+    {
+        var nextTheme = _currentTheme switch
+        {
+            AppTheme.System => AppTheme.Light,
+            AppTheme.Light => AppTheme.Dark,
+            _ => AppTheme.System
+        };
+        SetTheme(nextTheme, saveSettings: true);
+        var modeDesc = nextTheme == AppTheme.System
+            ? $"System Auto ({(_isLightThemeEffective ? "Light" : "Dark")})"
+            : nextTheme.ToString();
+        TxtStatus.Text = $"Theme: {modeDesc}";
+    }
+
+    private void BtnThemeOption_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string tag && Enum.TryParse<AppTheme>(tag, out var theme))
+        {
+            SetTheme(theme, saveSettings: true);
+        }
+    }
+
+    private void UpdateThemeSegmentButtons()
+    {
+        if (BtnThemeSystem == null || BtnThemeLight == null || BtnThemeDark == null) return;
+        UpdateSegmentButton(BtnThemeSystem, _currentTheme == AppTheme.System);
+        UpdateSegmentButton(BtnThemeLight, _currentTheme == AppTheme.Light);
+        UpdateSegmentButton(BtnThemeDark, _currentTheme == AppTheme.Dark);
+    }
+
     private void ApplyDwmAttributes()
     {
         try
@@ -158,8 +338,7 @@ public partial class MainWindow : Window
             var hwnd = new WindowInteropHelper(this).Handle;
             if (hwnd != IntPtr.Zero)
             {
-                // Force immersive dark mode for native Windows title bar and borders (OLED Black)
-                int darkMode = 1;
+                int darkMode = _isLightThemeEffective ? 0 : 1;
                 NativeMethods.DwmSetWindowAttribute(hwnd, NativeMethods.DWMWA_USE_IMMERSIVE_DARK_MODE, ref darkMode, sizeof(int));
 
                 // Windows 11 rounded window corners
@@ -702,7 +881,9 @@ public partial class MainWindow : Window
         if (isActive)
         {
             btn.Background = (SolidColorBrush)FindResource("BgSegmentActiveBrush");
-            btn.Foreground = Brushes.White;
+            btn.Foreground = _isLightThemeEffective
+                ? (SolidColorBrush)FindResource("AccentBrush")
+                : (SolidColorBrush)FindResource("TextPrimaryBrush");
             btn.FontWeight = FontWeights.SemiBold;
         }
         else
@@ -743,6 +924,8 @@ public partial class MainWindow : Window
                 _summarizeResultBuffer = value;
             else if (_currentMode == AppMode.DetailedReview)
                 _detailedResultBuffer = value;
+            else if (_currentMode == AppMode.Brainstorm)
+                _brainstormResultBuffer = value;
             else
                 _quickFixResultBuffer = value;
         }
@@ -788,6 +971,11 @@ public partial class MainWindow : Window
             _replyDraftBuffer = TxtDraft.Text;
             _detailedResultBuffer = TxtResult.Text;
         }
+        else if (_currentMode == AppMode.Brainstorm)
+        {
+            _replyDraftBuffer = TxtDraft.Text;
+            _brainstormResultBuffer = TxtResult.Text;
+        }
         else
         {
             _replyDraftBuffer = TxtDraft.Text;
@@ -817,6 +1005,13 @@ public partial class MainWindow : Window
             _accumulatedResult = _detailedResultBuffer;
             TxtResultEmpty.Visibility = string.IsNullOrEmpty(_detailedResultBuffer) ? Visibility.Visible : Visibility.Collapsed;
         }
+        else if (mode == AppMode.Brainstorm)
+        {
+            TxtDraft.Text = _replyDraftBuffer;
+            TxtResult.Text = _brainstormResultBuffer;
+            _accumulatedResult = _brainstormResultBuffer;
+            TxtResultEmpty.Visibility = string.IsNullOrEmpty(_brainstormResultBuffer) ? Visibility.Visible : Visibility.Collapsed;
+        }
         else
         {
             TxtDraft.Text = _replyDraftBuffer;
@@ -828,15 +1023,18 @@ public partial class MainWindow : Window
 
         // Update clean full-width segment highlights
         UpdateSegmentButton(BtnModeQuickFix, mode == AppMode.QuickFix);
+        UpdateSegmentButton(BtnModeBrainstorm, mode == AppMode.Brainstorm);
         UpdateSegmentButton(BtnModeDetailed, mode == AppMode.DetailedReview);
         UpdateSegmentButton(BtnModeSummarize, mode == AppMode.Summarize);
+
+        // Context & Custom Instructions box is available across all modes
+        BdContextContainer.Visibility = Visibility.Visible;
+        ExpContext.Visibility = Visibility.Visible;
 
         switch (mode)
         {
             case AppMode.QuickFix:
                 PanelTones.Visibility = Visibility.Visible;
-                BdContextContainer.Visibility = Visibility.Visible;
-                ExpContext.Visibility = Visibility.Visible;
                 UpdateDraftLabelsForModeAndTone();
                 BtnViewText.Content = "Text";
                 BtnViewDiff.Content = "Diff";
@@ -852,10 +1050,25 @@ public partial class MainWindow : Window
                 }
                 break;
 
+            case AppMode.Brainstorm:
+                PanelTones.Visibility = Visibility.Visible;
+                UpdateDraftLabelsForModeAndTone();
+                BtnViewText.Content = "Text";
+                BtnViewDiff.Content = "Styled";
+                PanelDiffSwitch.Visibility = Visibility.Visible;
+                RtfDiff.Document.Blocks.Clear();
+                if (!string.IsNullOrWhiteSpace(_brainstormResultBuffer))
+                {
+                    RenderMarkdownView(_brainstormResultBuffer);
+                }
+                else
+                {
+                    SetDiffView(false);
+                }
+                break;
+
             case AppMode.DetailedReview:
                 PanelTones.Visibility = Visibility.Visible;
-                BdContextContainer.Visibility = Visibility.Visible;
-                ExpContext.Visibility = Visibility.Visible;
                 UpdateDraftLabelsForModeAndTone();
                 BtnViewText.Content = "Raw";
                 BtnViewDiff.Content = "Styled";
@@ -873,8 +1086,6 @@ public partial class MainWindow : Window
 
             case AppMode.Summarize:
                 PanelTones.Visibility = Visibility.Collapsed;
-                BdContextContainer.Visibility = Visibility.Collapsed;
-                ExpContext.Visibility = Visibility.Collapsed;
                 LblInputTitle.Text = "Customer's message";
                 TxtDraftWatermark.Text = "Paste the customer's verbose inquiry or ticket to summarize...";
                 TxtImproveBtn.Text = "Summarize";
@@ -918,6 +1129,23 @@ public partial class MainWindow : Window
     private void UpdateDraftLabelsForModeAndTone()
     {
         if (_currentMode == AppMode.Summarize) return;
+
+        if (_currentMode == AppMode.Brainstorm)
+        {
+            if (_currentTone == TonePreset.Internal)
+            {
+                LblInputTitle.Text = "Rough Internal Thoughts (Brainstorm)";
+                TxtDraftWatermark.Text = "Write rough findings, shorthand, or chaotic notes in your own words â€” AI will structure them into a clear note for colleagues...";
+                TxtImproveBtn.Text = "Structure Internal";
+            }
+            else
+            {
+                LblInputTitle.Text = "Rough Thoughts / Key Points (Brainstorm)";
+                TxtDraftWatermark.Text = "Write roughly in your own words what needs to be explained to the user â€” AI will break it down step by step...";
+                TxtImproveBtn.Text = "Structure Reply";
+            }
+            return;
+        }
 
         if (_currentTone == TonePreset.Internal)
         {
@@ -1144,6 +1372,7 @@ public partial class MainWindow : Window
     private void UpdatePromptTabsStyling()
     {
         HighlightPromptTab(BtnPromptTabQuickFix, _editingPromptMode == AppMode.QuickFix);
+        HighlightPromptTab(BtnPromptTabBrainstorm, _editingPromptMode == AppMode.Brainstorm);
         HighlightPromptTab(BtnPromptTabDetailed, _editingPromptMode == AppMode.DetailedReview);
         HighlightPromptTab(BtnPromptTabSummarize, _editingPromptMode == AppMode.Summarize);
     }
@@ -1250,8 +1479,21 @@ public partial class MainWindow : Window
 
     private void TxtContext_TextChanged(object sender, TextChangedEventArgs e)
     {
+        UpdateContextVisualState();
+    }
+
+    private void UpdateContextVisualState()
+    {
+        if (TxtContext == null || BadgeContextActive == null || BdContextContainer == null || LblContextHeader == null)
+            return;
+
         var raw = TxtContext.Text;
         bool hasContext = !string.IsNullOrWhiteSpace(raw);
+
+        if (TxtContextWatermark != null)
+        {
+            TxtContextWatermark.Visibility = string.IsNullOrEmpty(raw) ? Visibility.Visible : Visibility.Collapsed;
+        }
 
         BadgeContextActive.Visibility = hasContext ? Visibility.Visible : Visibility.Collapsed;
         TxtContextPreview.Visibility = hasContext ? Visibility.Visible : Visibility.Collapsed;
@@ -1270,11 +1512,28 @@ public partial class MainWindow : Window
             }
             TxtContextPreview.Text = $"— \"{singleLine}\"";
 
-            BdContextContainer.Background = new SolidColorBrush(Color.FromRgb(18, 33, 28));
-            BdContextContainer.BorderBrush = new SolidColorBrush(Color.FromRgb(34, 197, 94));
-            BdContextContainer.BorderThickness = new Thickness(1.2);
-            LblContextHeader.Foreground = new SolidColorBrush(Color.FromRgb(74, 222, 128));
-            LblContextHeader.FontWeight = FontWeights.SemiBold;
+            if (_isLightThemeEffective)
+            {
+                BdContextContainer.Background = new SolidColorBrush(Color.FromRgb(240, 253, 244)); // #F0FDF4
+                BdContextContainer.BorderBrush = new SolidColorBrush(Color.FromRgb(22, 163, 74));   // #16A34A
+                BdContextContainer.BorderThickness = new Thickness(1.2);
+                LblContextHeader.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));      // #15803D
+                LblContextHeader.FontWeight = FontWeights.SemiBold;
+                BadgeContextActive.Background = new SolidColorBrush(Color.FromRgb(220, 252, 231));  // #DCFCE7
+                BadgeContextActive.BorderBrush = new SolidColorBrush(Color.FromRgb(22, 163, 74));
+                TxtContextBadge.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
+            }
+            else
+            {
+                BdContextContainer.Background = new SolidColorBrush(Color.FromRgb(18, 33, 28));
+                BdContextContainer.BorderBrush = new SolidColorBrush(Color.FromRgb(34, 197, 94));
+                BdContextContainer.BorderThickness = new Thickness(1.2);
+                LblContextHeader.Foreground = new SolidColorBrush(Color.FromRgb(74, 222, 128));
+                LblContextHeader.FontWeight = FontWeights.SemiBold;
+                BadgeContextActive.Background = new SolidColorBrush(Color.FromRgb(20, 53, 37));
+                BadgeContextActive.BorderBrush = new SolidColorBrush(Color.FromRgb(34, 197, 94));
+                TxtContextBadge.Foreground = new SolidColorBrush(Color.FromRgb(74, 222, 128));
+            }
         }
         else
         {
@@ -1320,6 +1579,7 @@ public partial class MainWindow : Window
         {
             _replyDraftBuffer = string.Empty;
             _quickFixResultBuffer = string.Empty;
+            _brainstormResultBuffer = string.Empty;
             _detailedResultBuffer = string.Empty;
         }
 
@@ -1366,6 +1626,11 @@ public partial class MainWindow : Window
             _replyDraftBuffer = transformed;
             _detailedResultBuffer = transformed;
         }
+        else if (_currentMode == AppMode.Brainstorm)
+        {
+            _replyDraftBuffer = transformed;
+            _brainstormResultBuffer = transformed;
+        }
         else
         {
             _replyDraftBuffer = transformed;
@@ -1378,7 +1643,6 @@ public partial class MainWindow : Window
             TxtStatus.Text = "Transformed & copied to clipboard";
         }
     }
-
     private void MenuTransform_UpperCase(object sender, RoutedEventArgs e) => ApplyTransform(TextTransformService.ToUpperCase);
     private void MenuTransform_LowerCase(object sender, RoutedEventArgs e) => ApplyTransform(TextTransformService.ToLowerCase);
     private void MenuTransform_Capitalize(object sender, RoutedEventArgs e) => ApplyTransform(TextTransformService.CapitalizeWords);
@@ -1489,6 +1753,10 @@ public partial class MainWindow : Window
         {
             systemPrompt = AppSettings.DefaultInternalPrompt;
         }
+        else if (_currentMode == AppMode.Brainstorm && _currentTone == TonePreset.Internal)
+        {
+            systemPrompt = AppSettings.DefaultInternalBrainstormPrompt;
+        }
         else if (_currentMode == AppMode.DetailedReview && _currentTone == TonePreset.Internal)
         {
             systemPrompt = AppSettings.DefaultInternalDetailedReviewPrompt;
@@ -1521,11 +1789,11 @@ public partial class MainWindow : Window
             systemPrompt += "\n\nKeep your internal thinking concise (under 150 words), then output the final rewritten text.";
         }
 
-        // Build User Prompt
+        // Build User Prompt (context & specific processing instructions supported across all modes)
         string userPrompt;
         var contextText = TxtContext.Text.Trim();
 
-        if (!string.IsNullOrWhiteSpace(contextText) && _currentMode != AppMode.Summarize)
+        if (!string.IsNullOrWhiteSpace(contextText))
         {
             userPrompt = $"<context>\n{contextText}\n</context>\n\n<draft>\n{draftText}\n</draft>";
         }
@@ -1624,7 +1892,9 @@ public partial class MainWindow : Window
                 await _flmService.EnsureLmStudioModelReadyAsync(model.ModelId, lmProgress, _streamCts.Token);
             }
 
-            double requestTemp = (_currentMode != AppMode.Summarize && _currentTone == TonePreset.Rephrase) ? 0.55 : 0.2;
+            double requestTemp = (_currentMode != AppMode.Summarize && _currentTone == TonePreset.Rephrase)
+                ? 0.55
+                : (_currentMode == AppMode.Brainstorm ? 0.3 : 0.2);
 
             await Task.Run(async () =>
             {
@@ -1667,6 +1937,10 @@ public partial class MainWindow : Window
             else if (_currentMode == AppMode.DetailedReview)
             {
                 _detailedResultBuffer = cleanedOutput;
+            }
+            else if (_currentMode == AppMode.Brainstorm)
+            {
+                _brainstormResultBuffer = cleanedOutput;
             }
             else
             {
@@ -1758,12 +2032,20 @@ public partial class MainWindow : Window
         // Standard line height to match TxtResult without vertical stretching
         var paragraph = new Paragraph { Margin = new Thickness(0) };
 
-        // OLED Dark theme diff colors: high contrast green & red with soft dark background
-        var addedBg = new SolidColorBrush(Color.FromArgb(60, 34, 197, 94)); // soft green tint
-        var addedFg = new SolidColorBrush(Color.FromArgb(255, 74, 222, 128)); // #4ADE80 mint
+        // Theme-adaptive diff colors for crisp readability in both Dark and Light mode
+        var addedBg = _isLightThemeEffective
+            ? new SolidColorBrush(Color.FromArgb(55, 22, 163, 74))
+            : new SolidColorBrush(Color.FromArgb(60, 34, 197, 94));
+        var addedFg = _isLightThemeEffective
+            ? new SolidColorBrush(Color.FromRgb(21, 128, 61))
+            : new SolidColorBrush(Color.FromRgb(74, 222, 128));
 
-        var removedBg = new SolidColorBrush(Color.FromArgb(60, 239, 68, 68)); // soft red tint
-        var removedFg = new SolidColorBrush(Color.FromArgb(255, 252, 165, 165)); // #FCA5A5 coral
+        var removedBg = _isLightThemeEffective
+            ? new SolidColorBrush(Color.FromArgb(50, 220, 38, 38))
+            : new SolidColorBrush(Color.FromArgb(60, 239, 68, 68));
+        var removedFg = _isLightThemeEffective
+            ? new SolidColorBrush(Color.FromRgb(185, 28, 28))
+            : new SolidColorBrush(Color.FromRgb(252, 165, 165));
 
         bool hasChanges = diffTokens.Any(t => t.Type == DiffTokenType.Added || t.Type == DiffTokenType.Removed);
         bool isIdentical = !hasChanges || string.Equals(original.Trim(), modified.Trim(), StringComparison.Ordinal);
@@ -1777,8 +2059,12 @@ public partial class MainWindow : Window
 
                 var banner = new Border
                 {
-                    Background = new SolidColorBrush(Color.FromArgb(40, 34, 197, 94)),
-                    BorderBrush = new SolidColorBrush(Color.FromArgb(120, 34, 197, 94)),
+                    Background = _isLightThemeEffective
+                        ? new SolidColorBrush(Color.FromRgb(240, 253, 244))
+                        : new SolidColorBrush(Color.FromArgb(40, 34, 197, 94)),
+                    BorderBrush = _isLightThemeEffective
+                        ? new SolidColorBrush(Color.FromRgb(22, 163, 74))
+                        : new SolidColorBrush(Color.FromArgb(120, 34, 197, 94)),
                     BorderThickness = new Thickness(1),
                     CornerRadius = new CornerRadius(6),
                     Padding = new Thickness(14, 10, 14, 10),
@@ -1791,13 +2077,13 @@ public partial class MainWindow : Window
                     Text = "✓ No changes needed — draft is already optimal!",
                     FontSize = 13,
                     FontWeight = FontWeights.SemiBold,
-                    Foreground = new SolidColorBrush(Color.FromArgb(255, 74, 222, 128))
+                    Foreground = addedFg
                 };
                 var subText = new TextBlock
                 {
                     Text = "The generated result is 100% identical to your draft.",
                     FontSize = 11,
-                    Foreground = new SolidColorBrush(Color.FromArgb(255, 148, 163, 184)),
+                    Foreground = (SolidColorBrush)FindResource("TextSecondaryBrush"),
                     Margin = new Thickness(0, 3, 0, 0)
                 };
                 stack.Children.Add(headerText);
@@ -1850,7 +2136,7 @@ public partial class MainWindow : Window
     private void RenderMarkdownView(string markdown)
     {
         if (string.IsNullOrWhiteSpace(markdown)) return;
-        var doc = MarkdownDocumentRenderer.Render(markdown);
+        var doc = MarkdownDocumentRenderer.Render(markdown, _isLightThemeEffective);
         RtfDiff.Document = doc;
         SetDiffView(true);
     }
@@ -1864,7 +2150,12 @@ public partial class MainWindow : Window
     {
         if (_currentMode != AppMode.QuickFix)
         {
-            var text = _currentMode == AppMode.Summarize ? _summarizeResultBuffer : _detailedResultBuffer;
+            var text = _currentMode switch
+            {
+                AppMode.Summarize => _summarizeResultBuffer,
+                AppMode.Brainstorm => _brainstormResultBuffer,
+                _ => _detailedResultBuffer
+            };
             if (string.IsNullOrEmpty(text)) text = TxtResult.Text;
             if (!string.IsNullOrEmpty(text))
             {
@@ -1883,7 +2174,6 @@ public partial class MainWindow : Window
         }
         SetDiffView(true);
     }
-
     private void SetDiffView(bool showDiff)
     {
         if (showDiff)
@@ -2057,6 +2347,8 @@ public partial class MainWindow : Window
                     _summarizeResultBuffer = item.ResultText;
                 else if (item.Mode == AppMode.DetailedReview)
                     _detailedResultBuffer = item.ResultText;
+                else if (item.Mode == AppMode.Brainstorm)
+                    _brainstormResultBuffer = item.ResultText;
                 else
                     _quickFixResultBuffer = item.ResultText;
 

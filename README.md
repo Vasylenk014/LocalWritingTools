@@ -23,8 +23,9 @@ Customer support teams handle sensitive customer information, ticket threads, or
 ## ✨ Features
 
 - ⚡️ **Global Hotkey Workflow:** Select any text anywhere (support portals, email, browser), press `⌥⌘G` (macOS) or `Alt+Shift+G` (Windows), and the app automatically grabs your clipboard, generates an improved response, and copies it back to your clipboard (`Auto-copy`).
-- 🛠️ **3 Purpose-Built Support Modes:**
+- 🛠️ **4 Purpose-Built Support Modes:**
   - **Quick Fix:** Grammatical correction, clarity, and tone improvements while strictly preserving original meaning, length, facts, and dynamic placeholders (`{{customer.first_name}}`, `{{ticket_id}}`).
+  - **💡 Brainstorm:** Write rough, unpolished thoughts or shorthand notes in your own words — AI breaks them down logically step by step into a structured, clear explanation.
   - **Detailed Review:** Structured feedback broken down into: `CORRECTED`, `CONCISE`, `CHANGES` (with grammar/style rationale), and `NOTES`.
   - **Summarize:** Extracts core issues, key details, and the customer's goal from lengthy, AI-generated customer messages in 5 seconds (with buffer isolation from reply drafts).
 - 🔀 **Universal Multi-Provider Architecture (Windows):**
@@ -42,7 +43,7 @@ Customer support teams handle sensitive customer information, ticket threads, or
   - Dynamically shows **NPU:** load when running on laptop Ryzen AI.
   - Dynamically shows **GPU:** load when running on desktop LM Studio.
 - 🕒 **Recent Checks History:** Keeps your last 15 checks locally in secure app storage with quick `Restore` and `Copy` buttons.
-- 🧪 **Automated Verification:** Comprehensive automated test suite with 20 built-in verification tests.
+- 🧪 **Automated Verification:** Comprehensive automated test suite with 21 built-in verification tests.
 
 ---
 
@@ -58,7 +59,7 @@ LocalWritingTools/
 ├── windows/                   # Native Windows app (C# .NET 8 WPF, OLED dark theme)
 │   ├── Models/                # Data models (AppSettings, FlmModel, HistoryItem)
 │   ├── Services/              # Backend services (API, Diff, Telemetry, Hotkey, SmartCopy)
-│   ├── tests/                 # Automated test suite (20 passing tests)
+│   ├── tests/                 # Automated test suite (21 passing tests)
 │   ├── MainWindow.xaml/.cs    # Main UI window, streaming, provider controls
 │   └── WritingTools.csproj    # .NET 8 project file
 ├── shared/                    # Standardized system prompts & assets

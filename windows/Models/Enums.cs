@@ -3,8 +3,16 @@ namespace WritingTools.Models;
 public enum AppMode
 {
     QuickFix,
+    Brainstorm,
     DetailedReview,
     Summarize
+}
+
+public enum AppTheme
+{
+    System,
+    Dark,
+    Light
 }
 
 public enum TonePreset

@@ -13,30 +13,51 @@ namespace WritingTools.Services;
 
 public static class MarkdownDocumentRenderer
 {
-    private static readonly SolidColorBrush TextPrimaryBrush = new(Color.FromRgb(0xF4, 0xF4, 0xF6));
-    private static readonly SolidColorBrush TextSecondaryBrush = new(Color.FromRgb(0xA1, 0xA1, 0xAA));
-    private static readonly SolidColorBrush HeaderAccentBrush = new(Color.FromRgb(0x81, 0x8C, 0xF8)); // Indigo
-    private static readonly SolidColorBrush GreenBrush = new(Color.FromRgb(0x22, 0xC5, 0x5E));
-    private static readonly SolidColorBrush RedBrush = new(Color.FromRgb(0xEF, 0x44, 0x44));
+    // Dark theme palette
+    private static readonly SolidColorBrush DarkTextPrimaryBrush = new(Color.FromRgb(0xF4, 0xF4, 0xF6));
+    private static readonly SolidColorBrush DarkTextSecondaryBrush = new(Color.FromRgb(0xA1, 0xA1, 0xAA));
+    private static readonly SolidColorBrush DarkHeaderAccentBrush = new(Color.FromRgb(0x81, 0x8C, 0xF8)); // Indigo 400
+    private static readonly SolidColorBrush DarkGreenBrush = new(Color.FromRgb(0x22, 0xC5, 0x5E));
+    private static readonly SolidColorBrush DarkRedBrush = new(Color.FromRgb(0xEF, 0x44, 0x44));
+
+    // Light theme palette
+    private static readonly SolidColorBrush LightTextPrimaryBrush = new(Color.FromRgb(0x0F, 0x17, 0x2A)); // Slate 900
+    private static readonly SolidColorBrush LightTextSecondaryBrush = new(Color.FromRgb(0x47, 0x55, 0x69)); // Slate 600
+    private static readonly SolidColorBrush LightHeaderAccentBrush = new(Color.FromRgb(0x4F, 0x46, 0xE5)); // Indigo 600
+    private static readonly SolidColorBrush LightGreenBrush = new(Color.FromRgb(0x15, 0x80, 0x3D)); // Green 700
+    private static readonly SolidColorBrush LightRedBrush = new(Color.FromRgb(0xB9, 0x1C, 0x1C)); // Red 700
 
     static MarkdownDocumentRenderer()
     {
-        TextPrimaryBrush.Freeze();
-        TextSecondaryBrush.Freeze();
-        HeaderAccentBrush.Freeze();
-        GreenBrush.Freeze();
-        RedBrush.Freeze();
+        DarkTextPrimaryBrush.Freeze();
+        DarkTextSecondaryBrush.Freeze();
+        DarkHeaderAccentBrush.Freeze();
+        DarkGreenBrush.Freeze();
+        DarkRedBrush.Freeze();
+
+        LightTextPrimaryBrush.Freeze();
+        LightTextSecondaryBrush.Freeze();
+        LightHeaderAccentBrush.Freeze();
+        LightGreenBrush.Freeze();
+        LightRedBrush.Freeze();
     }
 
-    public static FlowDocument Render(string markdownText)
+    public static FlowDocument Render(string markdownText, bool isLightTheme = false)
     {
+        var primaryBrush = isLightTheme ? LightTextPrimaryBrush : DarkTextPrimaryBrush;
+        var secondaryBrush = isLightTheme ? LightTextSecondaryBrush : DarkTextSecondaryBrush;
+        var accentBrush = isLightTheme ? LightHeaderAccentBrush : DarkHeaderAccentBrush;
+        var greenBrush = isLightTheme ? LightGreenBrush : DarkGreenBrush;
+        var redBrush = isLightTheme ? LightRedBrush : DarkRedBrush;
+
         var doc = new FlowDocument
         {
             PagePadding = new Thickness(0),
             Background = Brushes.Transparent,
+            Foreground = primaryBrush,
             FontFamily = new FontFamily("Segoe UI Variable, Segoe UI"),
             FontSize = 13.0,
-            LineHeight = 22.0
+            LineHeight = 21.0
         };
 
         if (string.IsNullOrWhiteSpace(markdownText))
@@ -70,7 +91,7 @@ public static class MarkdownDocumentRenderer
                 {
                     FontWeight = FontWeights.Bold,
                     FontSize = 13.5,
-                    Foreground = HeaderAccentBrush
+                    Foreground = accentBrush
                 };
                 headerPara.Inlines.Add(headerRun);
                 doc.Blocks.Add(headerPara);
@@ -89,21 +110,44 @@ public static class MarkdownDocumentRenderer
                 var bulletSymbol = new Run("• ")
                 {
                     FontWeight = FontWeights.Bold,
-                    Foreground = HeaderAccentBrush
+                    Foreground = accentBrush
                 };
                 bulletPara.Inlines.Add(bulletSymbol);
 
-                AppendFormattedInlines(bulletPara, bulletContent);
+                AppendFormattedInlines(bulletPara, bulletContent, primaryBrush, secondaryBrush, accentBrush, greenBrush, redBrush);
                 doc.Blocks.Add(bulletPara);
                 continue;
             }
 
-            // 3. Regular Paragraphs
+            // 3. Numbered List Items (e.g. "1. item", "2) item")
+            var numMatch = Regex.Match(trimmed, @"^(\d+[\.\)])\s+(.*)$");
+            if (numMatch.Success)
+            {
+                var numPrefix = numMatch.Groups[1].Value + " ";
+                var numContent = numMatch.Groups[2].Value.Trim();
+                var numPara = new Paragraph
+                {
+                    Margin = new Thickness(12, 2, 0, 4)
+                };
+
+                var numRun = new Run(numPrefix)
+                {
+                    FontWeight = FontWeights.Bold,
+                    Foreground = accentBrush
+                };
+                numPara.Inlines.Add(numRun);
+
+                AppendFormattedInlines(numPara, numContent, primaryBrush, secondaryBrush, accentBrush, greenBrush, redBrush);
+                doc.Blocks.Add(numPara);
+                continue;
+            }
+
+            // 4. Regular Paragraphs
             var para = new Paragraph
             {
                 Margin = new Thickness(0, 0, 0, 6)
             };
-            AppendFormattedInlines(para, trimmed);
+            AppendFormattedInlines(para, trimmed, primaryBrush, secondaryBrush, accentBrush, greenBrush, redBrush);
             doc.Blocks.Add(para);
         }
 
@@ -156,10 +200,15 @@ public static class MarkdownDocumentRenderer
         return false;
     }
 
-    private static void AppendFormattedInlines(Paragraph paragraph, string text)
+    private static void AppendFormattedInlines(
+        Paragraph paragraph,
+        string text,
+        SolidColorBrush primaryBrush,
+        SolidColorBrush secondaryBrush,
+        SolidColorBrush accentBrush,
+        SolidColorBrush greenBrush,
+        SolidColorBrush redBrush)
     {
-        // Handle changes like "old text" → "new text" — explanation
-        // Match: "<original>" → "<new>" or "<original>" -> "<new>"
         var arrowMatch = Regex.Match(text, @"^([""“«][^""”»]+[""”»])\s*(?:→|->)\s*([""“«][^""”»]+[""”»])(.*)$");
         if (arrowMatch.Success)
         {
@@ -169,38 +218,41 @@ public static class MarkdownDocumentRenderer
 
             var origRun = new Run(orig)
             {
-                Foreground = RedBrush,
+                Foreground = redBrush,
                 TextDecorations = TextDecorations.Strikethrough
             };
             paragraph.Inlines.Add(origRun);
 
             var arrowRun = new Run(" → ")
             {
-                Foreground = TextSecondaryBrush,
+                Foreground = secondaryBrush,
                 FontWeight = FontWeights.Bold
             };
             paragraph.Inlines.Add(arrowRun);
 
             var modRun = new Run(mod)
             {
-                Foreground = GreenBrush,
+                Foreground = greenBrush,
                 FontWeight = FontWeights.SemiBold
             };
             paragraph.Inlines.Add(modRun);
 
             if (!string.IsNullOrEmpty(rest))
             {
-                AppendMarkdownSpans(paragraph, rest);
+                AppendMarkdownSpans(paragraph, rest, primaryBrush, accentBrush);
             }
             return;
         }
 
-        AppendMarkdownSpans(paragraph, text);
+        AppendMarkdownSpans(paragraph, text, primaryBrush, accentBrush);
     }
 
-    private static void AppendMarkdownSpans(Paragraph paragraph, string text)
+    private static void AppendMarkdownSpans(
+        Paragraph paragraph,
+        string text,
+        SolidColorBrush primaryBrush,
+        SolidColorBrush accentBrush)
     {
-        // Parse **bold** markers
         var parts = Regex.Split(text, @"(\*\*.*?\*\*)");
         foreach (var part in parts)
         {
@@ -212,7 +264,7 @@ public static class MarkdownDocumentRenderer
                 var boldRun = new Run(boldText)
                 {
                     FontWeight = FontWeights.Bold,
-                    Foreground = HeaderAccentBrush
+                    Foreground = accentBrush
                 };
                 paragraph.Inlines.Add(boldRun);
             }
@@ -220,7 +272,7 @@ public static class MarkdownDocumentRenderer
             {
                 var normalRun = new Run(part)
                 {
-                    Foreground = TextPrimaryBrush
+                    Foreground = primaryBrush
                 };
                 paragraph.Inlines.Add(normalRun);
             }

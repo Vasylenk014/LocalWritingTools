@@ -8,7 +8,7 @@
         WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow"
         AllowsTransparency="False"
-        Background="#0A0A0D"
+        Background="{DynamicResource BgDarkBrush}"
         ShowInTaskbar="True"
         Topmost="False"
         KeyDown="Window_KeyDown">
@@ -52,6 +52,8 @@
         <SolidColorBrush x:Key="GreenBrush" Color="{StaticResource GreenColor}"/>
         <SolidColorBrush x:Key="RedBrush" Color="{StaticResource RedColor}"/>
         <SolidColorBrush x:Key="YellowBrush" Color="{StaticResource YellowColor}"/>
+        <SolidColorBrush x:Key="OverlayScrimBrush" Color="#B0000000"/>
+        <SolidColorBrush x:Key="ToastBgBrush" Color="#181822"/>
 
         <!-- Flat Base Button Style -->
         <Style x:Key="FlatButton" TargetType="Button">
@@ -76,7 +78,7 @@
         <!-- Segmented Tab Button Style (Fills the entire slot, no inner badge) -->
         <Style x:Key="SegmentTabButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="Normal"/>
@@ -106,9 +108,9 @@
 
         <!-- Dark Pill Button Style -->
         <Style x:Key="DarkPillButton" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource BgPillBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource BgPillBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="Normal"/>
@@ -127,8 +129,8 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource BgPillHoverBrush}"/>
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource BorderLightBrush}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgPillHoverBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BorderLightBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Bd" Property="Opacity" Value="0.45"/>
@@ -141,7 +143,7 @@
 
         <!-- Dark Accent Button Style -->
         <Style x:Key="DarkAccentButton" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
             <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontSize" Value="13"/>
@@ -159,7 +161,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentHoverBrush}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Bd" Property="Opacity" Value="0.5"/>
@@ -178,8 +180,8 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ContextMenu">
-                        <Border Background="{StaticResource BgSurfaceBrush}"
-                                BorderBrush="{StaticResource BorderBrush}"
+                        <Border Background="{DynamicResource BgSurfaceBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="8"
                                 Padding="4">
@@ -196,7 +198,7 @@
         <!-- Dark Menu Item Style (Clean dark item) -->
         <Style x:Key="DarkMenuItem" TargetType="MenuItem">
             <Setter Property="OverridesDefaultStyle" Value="True"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -214,8 +216,8 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource AccentActiveBrush}"/>
-                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource AccentActiveBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.4"/>
@@ -233,7 +235,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Separator">
-                        <Border Height="1" Background="{StaticResource BorderBrush}"/>
+                        <Border Height="1" Background="{DynamicResource BorderBrush}"/>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -249,8 +251,8 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
                         <Border x:Name="Border"
-                                Background="{StaticResource BgPillBrush}"
-                                BorderBrush="{StaticResource BorderBrush}"
+                                Background="{DynamicResource BgPillBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="8">
                             <Grid>
@@ -261,7 +263,7 @@
                                 <Border Grid.Column="1">
                                     <Path x:Name="Arrow"
                                           Data="M 0 0 L 4 4 L 8 0 Z"
-                                          Fill="{StaticResource AccentBrush}"
+                                          Fill="{DynamicResource AccentBrush}"
                                           HorizontalAlignment="Center"
                                           VerticalAlignment="Center"/>
                                 </Border>
@@ -269,11 +271,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource BgPillHoverBrush}"/>
-                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource BorderLightBrush}"/>
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource BgPillHoverBrush}"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource BorderLightBrush}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource BgPillHoverBrush}"/>
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource BgPillHoverBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -297,12 +299,12 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource BgPillHoverBrush}"/>
-                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource BgPillHoverBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource AccentActiveBrush}"/>
-                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource AccentActiveBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -317,7 +319,7 @@
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
             <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
             <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="Medium"/>
             <Setter Property="ItemContainerStyle" Value="{StaticResource DarkComboBoxItem}"/>
@@ -350,8 +352,8 @@
                                       MaxHeight="260"
                                       Margin="0,4,0,8">
                                     <Border x:Name="DropDownBorder"
-                                            Background="{StaticResource BgSurfaceBrush}"
-                                            BorderBrush="{StaticResource BorderBrush}"
+                                            Background="{DynamicResource BgSurfaceBrush}"
+                                            BorderBrush="{DynamicResource BorderBrush}"
                                             BorderThickness="1"
                                             CornerRadius="8"
                                             Padding="4">
@@ -377,7 +379,7 @@
 
         <!-- Dark Collapsible Expander Style -->
         <Style x:Key="DarkExpander" TargetType="Expander">
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="Template">
@@ -391,7 +393,7 @@
                                         <Border Background="Transparent" Padding="0,4">
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                 <TextBlock x:Name="Arrow" Text="›" FontSize="14" FontWeight="Bold"
-                                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
                                                            Margin="0,0,6,0" VerticalAlignment="Center"/>
                                                 <ContentPresenter Content="{TemplateBinding Content}"
                                                                   ContentTemplate="{TemplateBinding ContentTemplate}"
@@ -404,7 +406,7 @@
                                                 <Setter TargetName="Arrow" Property="Margin" Value="0,-2,6,2"/>
                                             </Trigger>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Arrow" Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                                                <Setter TargetName="Arrow" Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -430,10 +432,10 @@
         </Style>
         <!-- Dark Input TextBox Style -->
         <Style x:Key="DarkInputTextBox" TargetType="TextBox">
-            <Setter Property="Background" Value="{StaticResource BgCardBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-            <Setter Property="CaretBrush" Value="{StaticResource AccentBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource BgCardBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontFamily" Value="Consolas, Segoe UI"/>
@@ -450,7 +452,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsFocused" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -480,6 +482,7 @@
                 <ColumnDefinition Width="*"/>    <!-- Model Dropdown -->
                 <ColumnDefinition Width="Auto"/> <!-- Refresh Button -->
                 <ColumnDefinition Width="Auto"/> <!-- Server Start/Stop Controls -->
+                <ColumnDefinition Width="Auto"/> <!-- Theme Toggle Button -->
                 <ColumnDefinition Width="Auto"/> <!-- Prompts Config Button -->
                 <ColumnDefinition Width="Auto"/> <!-- History Pill -->
                 <ColumnDefinition Width="Auto"/> <!-- Hotkey Badge -->
@@ -491,11 +494,11 @@
                     ToolTip="Switch AI Provider (⚡ FastFlowLM NPU / 🎮 LM Studio GPU / 🌐 Custom)">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Ellipse x:Name="StatusDot" Width="8" Height="8"
-                             Fill="{StaticResource GreenBrush}" Margin="0,0,6,0"
+                             Fill="{DynamicResource GreenBrush}" Margin="0,0,6,0"
                              VerticalAlignment="Center"/>
                     <TextBlock x:Name="TxtProviderBadge" Text="⚡ NPU" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,4,0"/>
-                    <TextBlock Text="▾" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                               Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,4,0"/>
+                    <TextBlock Text="▾" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button.ContextMenu>
                     <ContextMenu x:Name="MenuProvider" Style="{StaticResource DarkContextMenu}">
@@ -530,7 +533,7 @@
                             Padding="8,4" Margin="0,0,4,0"
                             ToolTip="Start FastFlowLM server with selected model">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock x:Name="TxtStartServerBtn" Text="▶ Start" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource GreenBrush}"/>
+                            <TextBlock x:Name="TxtStartServerBtn" Text="▶ Start" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource GreenBrush}"/>
                         </StackPanel>
                     </Button>
                     <Button x:Name="BtnStopServer" Click="BtnStopServer_Click"
@@ -538,7 +541,7 @@
                             Padding="8,4"
                             ToolTip="Stop FastFlowLM server and free NPU memory">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="⏹ Stop" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource RedBrush}"/>
+                            <TextBlock Text="⏹ Stop" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource RedBrush}"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -546,49 +549,58 @@
                 <!-- LM Studio Controls (Status + Free VRAM) -->
                 <StackPanel x:Name="PanelLmStudioControls" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0" Visibility="Collapsed">
                     <Border x:Name="BdLmStudioStatus"
-                            Background="{StaticResource BgPillBrush}" BorderBrush="{StaticResource BorderBrush}"
+                            Background="{DynamicResource BgPillBrush}" BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1" CornerRadius="7" Padding="8,4"
                             ToolTip="External Server Status">
                         <TextBlock x:Name="TxtLmStudioStatus" Text="LM Studio :1234" FontSize="11" FontWeight="Medium"
-                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </Border>
                     <Button x:Name="BtnUnloadLmStudio" Click="BtnUnloadLmStudio_Click"
                             Style="{StaticResource DarkPillButton}" Margin="4,0,0,0" Padding="8,4"
                             ToolTip="Unload model from GPU memory and free VRAM">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="⏏ Free VRAM" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource RedBrush}"/>
+                            <TextBlock Text="⏏ Free VRAM" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource RedBrush}"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>
             </StackPanel>
 
-            <!-- System Settings Configuration Button -->
-            <Button x:Name="BtnSettingsConfig" Grid.Column="4" Click="BtnSettingsConfig_Click"
-                    Style="{StaticResource DarkPillButton}"
+            <!-- Theme Toggle Button (Auto / Light / Dark) -->
+            <Button x:Name="BtnThemeToggle" Grid.Column="4" Click="BtnThemeToggle_Click"
+                    Style="{DynamicResource DarkPillButton}"
                     Margin="0,0,6,0" Padding="8,4"
-                    ToolTip="Server &amp; System Prompts Settings (⚙️)">
+                    ToolTip="Switch Theme: Auto (System) / Light / Dark">
+                <TextBlock x:Name="TxtThemeBadge" Text="🌗 Auto" FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Button>
+
+            <!-- System Settings Configuration Button -->
+            <Button x:Name="BtnSettingsConfig" Grid.Column="5" Click="BtnSettingsConfig_Click"
+                    Style="{DynamicResource DarkPillButton}"
+                    Margin="0,0,6,0" Padding="8,4"
+                    ToolTip="Server, Theme &amp; System Prompts Settings">
                 <TextBlock Text="⚙️" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Button>
 
             <!-- History Pill Button -->
-            <Button x:Name="BtnHistory" Grid.Column="5" Click="BtnHistory_Click"
-                    Style="{StaticResource DarkPillButton}"
+            <Button x:Name="BtnHistory" Grid.Column="6" Click="BtnHistory_Click"
+                    Style="{DynamicResource DarkPillButton}"
                     Margin="0,0,6,0" Padding="8,4"
                     ToolTip="Recent history (last 15 checks)">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="🕒" FontSize="11" Margin="0,0,4,0"/>
                     <TextBlock x:Name="TxtHistoryCount" Text="0" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}"/>
+                               Foreground="{DynamicResource TextPrimaryBrush}"/>
                 </StackPanel>
             </Button>
 
             <!-- Windows Hotkey Badge Pill -->
-            <Border Grid.Column="6" Background="{StaticResource BgPillBrush}"
-                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+            <Border Grid.Column="7" Background="{DynamicResource BgPillBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                     CornerRadius="7" Padding="8,4"
                     ToolTip="Global Windows shortcut to process highlighted text">
                 <TextBlock Text="Alt+Shift+G" FontSize="11" FontWeight="Medium"
-                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                           Foreground="{DynamicResource TextSecondaryBrush}"/>
             </Border>
         </Grid>
 
@@ -600,11 +612,11 @@
             </Grid.ColumnDefinitions>
 
             <TextBlock Grid.Column="0" Text="Thinking:" FontSize="13"
-                       Foreground="{StaticResource TextSecondaryBrush}"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
                        VerticalAlignment="Center" Margin="0,0,12,0"/>
 
-            <Border Grid.Column="1" Background="{StaticResource BgSegmentTrackBrush}"
-                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+            <Border Grid.Column="1" Background="{DynamicResource BgSegmentTrackBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                     CornerRadius="8" Padding="1" Height="32">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -626,24 +638,32 @@
         </Grid>
 
         <!-- ROW 2: MODE SELECTOR SEGMENTED CONTROL (Full-width clean segments) -->
-        <Border Grid.Row="2" Background="{StaticResource BgSegmentTrackBrush}"
-                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+        <Border Grid.Row="2" Background="{DynamicResource BgSegmentTrackBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                 CornerRadius="8" Padding="1" Height="36" Margin="0,0,0,10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <Button x:Name="BtnModeQuickFix" Grid.Column="0" Click="BtnMode_Click" Tag="QuickFix"
-                        Style="{StaticResource SegmentTabButton}" Content="Quick fix"/>
+                        Style="{StaticResource SegmentTabButton}" Content="Quick fix"
+                        ToolTip="Fix grammar, clarity, and tone of an existing reply draft"/>
 
-                <Button x:Name="BtnModeDetailed" Grid.Column="1" Click="BtnMode_Click" Tag="DetailedReview"
-                        Style="{StaticResource SegmentTabButton}" Content="Detailed review"/>
+                <Button x:Name="BtnModeBrainstorm" Grid.Column="1" Click="BtnMode_Click" Tag="Brainstorm"
+                        Style="{StaticResource SegmentTabButton}" Content="💡 Brainstorm"
+                        ToolTip="Write rough thoughts or shorthand in your own words â€” AI breaks it down into a structured explanation"/>
 
-                <Button x:Name="BtnModeSummarize" Grid.Column="2" Click="BtnMode_Click" Tag="Summarize"
-                        Style="{StaticResource SegmentTabButton}" Content="Summarize"/>
+                <Button x:Name="BtnModeDetailed" Grid.Column="2" Click="BtnMode_Click" Tag="DetailedReview"
+                        Style="{StaticResource SegmentTabButton}" Content="Detailed review"
+                        ToolTip="Get Corrected, Concise, and a breakdown of grammar/style changes"/>
+
+                <Button x:Name="BtnModeSummarize" Grid.Column="3" Click="BtnMode_Click" Tag="Summarize"
+                        Style="{StaticResource SegmentTabButton}" Content="Summarize"
+                        ToolTip="Extract Core Issue, Key Details, and Customer Goal in 5 seconds"/>
             </Grid>
         </Border>
 
@@ -653,77 +673,77 @@
             <Button x:Name="BtnToneStandard" Click="BtnTone_Click" Tag="Standard"
                     Style="{StaticResource FlatButton}" Margin="0,0,5,4"
                     ToolTip="Standard customer support reply â€” natural, warm, and helpful">
-                <Border x:Name="BdToneStandard" Background="{StaticResource AccentActiveBrush}"
-                        BorderBrush="{StaticResource AccentBrush}" BorderThickness="1"
+                <Border x:Name="BdToneStandard" Background="{DynamicResource AccentActiveBrush}"
+                        BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
                         CornerRadius="14" Padding="10,5">
                     <TextBlock x:Name="TxtToneStandard" Text="✨ Standard" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{StaticResource AccentBrush}"/>
+                               Foreground="{DynamicResource AccentBrush}"/>
                 </Border>
             </Button>
 
             <Button x:Name="BtnToneFriendly" Click="BtnTone_Click" Tag="Friendly"
                     Style="{StaticResource FlatButton}" Margin="0,0,5,4"
                     ToolTip="Warm, empathetic, and approachable customer tone">
-                <Border x:Name="BdToneFriendly" Background="{StaticResource BgPillBrush}"
-                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                <Border x:Name="BdToneFriendly" Background="{DynamicResource BgPillBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                         CornerRadius="14" Padding="10,5">
                     <TextBlock x:Name="TxtToneFriendly" Text="🤝 Friendly" FontSize="12" FontWeight="Normal"
-                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </Border>
             </Button>
 
             <Button x:Name="BtnToneConcise" Click="BtnTone_Click" Tag="Concise"
                     Style="{StaticResource FlatButton}" Margin="0,0,5,4"
                     ToolTip="Short, direct, and efficient without extra fluff">
-                <Border x:Name="BdToneConcise" Background="{StaticResource BgPillBrush}"
-                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                <Border x:Name="BdToneConcise" Background="{DynamicResource BgPillBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                         CornerRadius="14" Padding="10,5">
                     <TextBlock x:Name="TxtToneConcise" Text="⚡️ Concise" FontSize="12" FontWeight="Normal"
-                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </Border>
             </Button>
 
             <Button x:Name="BtnToneDeescalate" Click="BtnTone_Click" Tag="Deescalate"
                     Style="{StaticResource FlatButton}" Margin="0,0,5,4"
                     ToolTip="Calm, reassuring, and diplomatic tone to de-escalate frustrated customers">
-                <Border x:Name="BdToneDeescalate" Background="{StaticResource BgPillBrush}"
-                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                <Border x:Name="BdToneDeescalate" Background="{DynamicResource BgPillBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                         CornerRadius="14" Padding="10,5">
                     <TextBlock x:Name="TxtToneDeescalate" Text="🛡️ De-escalate" FontSize="12" FontWeight="Normal"
-                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </Border>
             </Button>
 
             <Button x:Name="BtnToneFormal" Click="BtnTone_Click" Tag="Formal"
                     Style="{StaticResource FlatButton}" Margin="0,0,5,4"
                     ToolTip="Strictly professional, structured business tone">
-                <Border x:Name="BdToneFormal" Background="{StaticResource BgPillBrush}"
-                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                <Border x:Name="BdToneFormal" Background="{DynamicResource BgPillBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                         CornerRadius="14" Padding="10,5">
                     <TextBlock x:Name="TxtToneFormal" Text="👔 Formal" FontSize="12" FontWeight="Normal"
-                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </Border>
             </Button>
 
             <Button x:Name="BtnToneRephrase" Click="BtnTone_Click" Tag="Rephrase"
                     Style="{StaticResource FlatButton}" Margin="0,0,5,4"
                     ToolTip="Paraphrase with fresh wording so repeated / follow-up replies to a user don't look copy-pasted">
-                <Border x:Name="BdToneRephrase" Background="{StaticResource BgPillBrush}"
-                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                <Border x:Name="BdToneRephrase" Background="{DynamicResource BgPillBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                         CornerRadius="14" Padding="10,5">
                     <TextBlock x:Name="TxtToneRephrase" Text="🔄 Rephrase" FontSize="12" FontWeight="Normal"
-                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </Border>
             </Button>
 
             <Button x:Name="BtnToneInternal" Click="BtnTone_Click" Tag="Internal"
                     Style="{StaticResource FlatButton}" Margin="0,0,0,4"
                     ToolTip="Edit internal ticket notes or messages to colleagues (direct, teammate-to-teammate tone)">
-                <Border x:Name="BdToneInternal" Background="{StaticResource BgPillBrush}"
-                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                <Border x:Name="BdToneInternal" Background="{DynamicResource BgPillBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                         CornerRadius="14" Padding="10,5">
                     <TextBlock x:Name="TxtToneInternal" Text="💬 Internal" FontSize="12" FontWeight="Normal"
-                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                               Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </Border>
             </Button>
         </WrapPanel>
@@ -736,8 +756,8 @@
             <Expander x:Name="ExpContext" Style="{StaticResource DarkExpander}">
                 <Expander.Header>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock x:Name="LblContextHeader" Text="Ticket context / Client message (optional)" FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="LblContextHeader" Text="Ticket context / Client message / Instructions (optional)" FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                         <Border x:Name="BadgeContextActive" Visibility="Collapsed"
                                 Background="#143525" BorderBrush="#22C55E" BorderThickness="1"
                                 CornerRadius="6" Padding="7,1.5" Margin="8,0,0,0" VerticalAlignment="Center">
@@ -746,7 +766,7 @@
                         </Border>
                         <TextBlock x:Name="TxtContextPreview" Visibility="Collapsed" Text=""
                                    FontSize="11" FontStyle="Italic"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" Margin="8,0,0,0"
                                    MaxWidth="220" TextTrimming="CharacterEllipsis"/>
                         <Button x:Name="BtnHeaderContextClear" Visibility="Collapsed"
@@ -755,20 +775,27 @@
                                 VerticalAlignment="Center" ToolTip="Clear ticket context"/>
                     </StackPanel>
                 </Expander.Header>
-                <Border Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
+                <Border Background="{DynamicResource BgSurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1" CornerRadius="8" Padding="8" Margin="0,4,0,4">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBox x:Name="TxtContext" Grid.Row="0" Height="70"
-                                 Background="Transparent" BorderThickness="0"
-                                 Foreground="{StaticResource TextPrimaryBrush}"
-                                 CaretBrush="{StaticResource AccentBrush}"
-                                 FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 TextChanged="TxtContext_TextChanged"/>
+                        <Grid Grid.Row="0">
+                            <TextBox x:Name="TxtContext" Height="72"
+                                     Background="Transparent" BorderThickness="0"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                     CaretBrush="{DynamicResource AccentBrush}"
+                                     FontSize="12" AcceptsReturn="True" TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     TextChanged="TxtContext_TextChanged"/>
+                            <TextBlock x:Name="TxtContextWatermark"
+                                       Text="Paste client's message / ticket context, OR add specific processing instructions (e.g., &quot;make it shorter&quot;, &quot;politely decline refund&quot;, &quot;explain step-by-step&quot;, &quot;translate to English&quot;)..."
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       FontSize="11.5" TextWrapping="Wrap"
+                                       Margin="4,2,4,0" IsHitTestVisible="False"/>
+                        </Grid>
                         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
                             <Button Click="BtnContextPaste_Click" Style="{StaticResource DarkPillButton}"
                                     Content="Paste" Padding="8,2" Margin="0,0,6,0"/>
@@ -798,7 +825,7 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock x:Name="LblInputTitle" Grid.Column="0" Text="Draft" FontSize="13" FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
 
                 <Button Grid.Column="1" Click="BtnDraftPaste_Click" Style="{StaticResource DarkPillButton}"
                         Content="Paste" Padding="8,3" Margin="0,0,6,0"/>
@@ -806,8 +833,8 @@
                 <Button x:Name="BtnTransform" Grid.Column="2" Click="BtnTransform_Click"
                         Style="{StaticResource DarkPillButton}" Padding="8,3" Margin="0,0,6,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Aa Transform" FontSize="11" Foreground="{StaticResource TextPrimaryBrush}"/>
-                        <TextBlock Text=" ▾" FontSize="9" Foreground="{StaticResource AccentBrush}" Margin="2,0,0,0"/>
+                        <TextBlock Text="Aa Transform" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Text=" ▾" FontSize="9" Foreground="{DynamicResource AccentBrush}" Margin="2,0,0,0"/>
                     </StackPanel>
                     <Button.ContextMenu>
                         <ContextMenu x:Name="MenuTransform" Style="{StaticResource DarkContextMenu}">
@@ -824,21 +851,21 @@
                 </Button>
 
                 <TextBlock x:Name="TxtInputCount" Grid.Column="4" Text="" FontSize="11"
-                           Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                           Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
 
                 <Button Grid.Column="5" Click="BtnDraftClear_Click" Style="{StaticResource DarkPillButton}"
                         Content="Clear" Padding="8,3" ToolTip="Clear both draft and result text"/>
             </Grid>
 
             <!-- Draft Text Box (OLED Dark Card) -->
-            <Border Grid.Row="1" Background="{StaticResource BgCardBrush}"
-                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+            <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                     CornerRadius="8">
                 <Grid>
                     <TextBox x:Name="TxtDraft"
                              Background="Transparent"
-                             Foreground="{StaticResource TextPrimaryBrush}"
-                             CaretBrush="{StaticResource AccentBrush}"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             CaretBrush="{DynamicResource AccentBrush}"
                              BorderThickness="0"
                              AcceptsReturn="True" AcceptsTab="True"
                              TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
@@ -848,7 +875,7 @@
 
                     <TextBlock x:Name="TxtDraftWatermark"
                                Text="Type or paste your customer reply draft here..."
-                               Foreground="{StaticResource TextMutedBrush}"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                FontSize="13" FontStyle="Normal"
                                Margin="12,10"
                                IsHitTestVisible="False"/>
@@ -866,13 +893,13 @@
 
             <!-- Auto-copy Checkbox -->
             <CheckBox x:Name="ChkAutoCopy" Grid.Column="0" Content="Auto-copy" IsChecked="True"
-                      Foreground="{StaticResource TextPrimaryBrush}" FontSize="12"
+                      Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12"
                       VerticalAlignment="Center" Margin="2,0,12,0"/>
 
             <!-- Status Text with clean CharacterEllipsis -->
             <Grid Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0" ClipToBounds="True">
                 <TextBlock x:Name="TxtStatus" Text="Ready" FontSize="11"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            TextTrimming="CharacterEllipsis"
                            VerticalAlignment="Center"/>
             </Grid>
@@ -882,7 +909,7 @@
                 <!-- Stop Button (during streaming) -->
                 <Button x:Name="BtnStop" Click="BtnStop_Click" Visibility="Collapsed"
                         Style="{StaticResource DarkPillButton}" Margin="0,0,8,0" Padding="12,6">
-                    <TextBlock Text="⏹ Stop" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource RedBrush}"/>
+                    <TextBlock Text="⏹ Stop" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource RedBrush}"/>
                 </Button>
 
                 <!-- Improve Button (Windows Shortcut Ctrl+Enter) -->
@@ -912,17 +939,17 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Text="Result" FontSize="13" FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
 
                 <!-- Live Tok/s Stats in Header -->
                 <TextBlock x:Name="TxtHeaderStats" Grid.Column="1" Text="" FontSize="11" FontWeight="SemiBold"
-                           Foreground="{StaticResource AccentBrush}"
+                           Foreground="{DynamicResource AccentBrush}"
                            HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0"
                            TextTrimming="CharacterEllipsis"/>
 
                 <!-- Diff Switch Segmented Pill -->
-                <Border x:Name="PanelDiffSwitch" Grid.Column="2" Background="{StaticResource BgSegmentTrackBrush}"
-                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                <Border x:Name="PanelDiffSwitch" Grid.Column="2" Background="{DynamicResource BgSegmentTrackBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                         CornerRadius="7" Padding="1" Height="26">
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="BtnViewText" Click="BtnViewText_Click"
@@ -934,15 +961,15 @@
             </Grid>
 
             <!-- Result Box (OLED Dark Card) -->
-            <Border Grid.Row="1" Background="{StaticResource BgCardBrush}"
-                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+            <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                     CornerRadius="8">
                 <Grid>
                     <!-- Regular Text View -->
                     <TextBox x:Name="TxtResult"
                              Background="Transparent"
-                             Foreground="{StaticResource TextPrimaryBrush}"
-                             CaretBrush="{StaticResource AccentBrush}"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             CaretBrush="{DynamicResource AccentBrush}"
                              BorderThickness="0"
                              IsReadOnly="True"
                              TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
@@ -952,7 +979,7 @@
                     <!-- Visual Diff View -->
                     <RichTextBox x:Name="RtfDiff" Visibility="Collapsed"
                                  Background="Transparent"
-                                 Foreground="{StaticResource TextPrimaryBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
                                  BorderThickness="0"
                                  IsReadOnly="True"
                                  VerticalScrollBarVisibility="Auto"
@@ -962,7 +989,7 @@
                     <!-- Empty Result Placeholder -->
                     <TextBlock x:Name="TxtResultEmpty"
                                Text=""
-                               Foreground="{StaticResource TextMutedBrush}"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                FontSize="12" FontStyle="Italic"
                                Margin="12,10"
                                IsHitTestVisible="False"/>
@@ -984,27 +1011,27 @@
                     ToolTip="Copy result (or CORRECTED block in Detailed review) (Ctrl+Shift+C)">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="Copy Result (Ctrl+Shift+C)" FontSize="12" FontWeight="Medium"
-                               Foreground="{StaticResource TextPrimaryBrush}"/>
+                               Foreground="{DynamicResource TextPrimaryBrush}"/>
                 </StackPanel>
             </Button>
 
             <!-- LM Studio-style System Telemetry: RAM & NPU stats -->
             <Border x:Name="BdSystemMetrics" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Background="{StaticResource BgPillBrush}" BorderBrush="{StaticResource BorderBrush}"
+                    Background="{DynamicResource BgPillBrush}" BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="1" CornerRadius="7" Padding="12,5"
                     ToolTip="System Telemetry: Physical RAM &amp; AMD Ryzen AI NPU Load">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <!-- Memory / RAM -->
-                    <TextBlock Text="RAM:" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,5,0"/>
-                    <TextBlock x:Name="TxtRamStats" Text="-- / -- GB (--%)" FontSize="11" FontWeight="Medium" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,12,0"/>
+                    <TextBlock Text="RAM:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,5,0"/>
+                    <TextBlock x:Name="TxtRamStats" Text="-- / -- GB (--%)" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0"/>
 
                     <!-- Subtle vertical separator -->
-                    <Border Width="1" Height="11" Background="{StaticResource BorderBrush}" Margin="0,0,12,0"/>
+                    <Border Width="1" Height="11" Background="{DynamicResource BorderBrush}" Margin="0,0,12,0"/>
 
                     <!-- Dynamic Compute Device (NPU / GPU) -->
-                    <TextBlock x:Name="LblComputeDevice" Text="NPU:" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,5,0"/>
+                    <TextBlock x:Name="LblComputeDevice" Text="NPU:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,5,0"/>
                     <Ellipse x:Name="DotNpuTelemetry" Width="6" Height="6" Fill="#71717A" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                    <TextBlock x:Name="TxtNpuStats" Text="0% (Idle)" FontSize="11" FontWeight="Medium" Foreground="{StaticResource TextPrimaryBrush}"/>
+                    <TextBlock x:Name="TxtNpuStats" Text="0% (Idle)" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}"/>
                 </StackPanel>
             </Border>
 
@@ -1016,15 +1043,15 @@
                     Style="{StaticResource DarkPillButton}" Padding="16,6"
                     ToolTip="Exit Writing Tools completely">
                 <TextBlock Text="Quit" FontSize="12" FontWeight="Medium"
-                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                           Foreground="{DynamicResource TextSecondaryBrush}"/>
             </Button>
         </Grid>
 
         <!-- OVERLAY: HISTORY DRAWER MODAL (Dark Theme) -->
         <Border x:Name="OverlayHistory" Grid.Row="0" Grid.RowSpan="9"
-                Background="#B0000000" Visibility="Collapsed" CornerRadius="8">
-            <Border Width="560" Height="580" Background="{StaticResource BgSurfaceBrush}"
-                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                Background="{DynamicResource OverlayScrimBrush}" Visibility="Collapsed" CornerRadius="8">
+            <Border Width="560" Height="580" Background="{DynamicResource BgSurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                     CornerRadius="12" Padding="18">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="28" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.6"/>
@@ -1040,13 +1067,13 @@
                     <Grid Grid.Row="0" Margin="0,0,0,12">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="Recent History" FontSize="15" FontWeight="Bold"
-                                       Foreground="{StaticResource TextPrimaryBrush}"/>
-                            <TextBlock Text=" (last 15 checks)" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text=" (last 15 checks)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="6,0,0,0"/>
                         </StackPanel>
                         <Button Click="BtnCloseHistory_Click" HorizontalAlignment="Right"
                                 Style="{StaticResource FlatButton}" Padding="4">
-                            <TextBlock Text="✕" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="✕" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </Button>
                     </Grid>
 
@@ -1059,12 +1086,12 @@
                     <Grid Grid.Row="2" Margin="0,12,0,0">
                         <Button Click="BtnClearHistory_Click" HorizontalAlignment="Left"
                                 Style="{StaticResource DarkPillButton}" Padding="10,5">
-                            <TextBlock Text="Clear History" FontSize="11" Foreground="{StaticResource RedBrush}"/>
+                            <TextBlock Text="Clear History" FontSize="11" Foreground="{DynamicResource RedBrush}"/>
                         </Button>
 
                         <Button Click="BtnCloseHistory_Click" HorizontalAlignment="Right"
                                 Style="{StaticResource DarkPillButton}" Padding="14,5">
-                            <TextBlock Text="Close" FontSize="11" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Close" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </Button>
                     </Grid>
                 </Grid>
@@ -1073,9 +1100,9 @@
 
         <!-- OVERLAY: SETTINGS & CONFIGURATION MODAL (Server & System Prompts) -->
         <Border x:Name="OverlaySettings" Grid.Row="0" Grid.RowSpan="9"
-                Background="#B0000000" Visibility="Collapsed" CornerRadius="8">
-            <Border Width="620" MaxHeight="600" Background="{StaticResource BgSurfaceBrush}"
-                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                Background="{DynamicResource OverlayScrimBrush}" Visibility="Collapsed" CornerRadius="8">
+            <Border Width="620" MaxHeight="600" Background="{DynamicResource BgSurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                     CornerRadius="12" Padding="20">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="28" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.6"/>
@@ -1092,19 +1119,19 @@
                     <Grid Grid.Row="0" Margin="0,0,0,14">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="Settings &amp; Configuration" FontSize="16" FontWeight="Bold"
-                                       Foreground="{StaticResource TextPrimaryBrush}"/>
-                            <TextBlock x:Name="TxtSettingsSubheader" Text=" (Server &amp; System Prompts)" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock x:Name="TxtSettingsSubheader" Text=" (Server &amp; System Prompts)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
                                        VerticalAlignment="Center" Margin="8,0,0,0"/>
                         </StackPanel>
                         <Button Click="BtnCloseSettings_Click" HorizontalAlignment="Right"
                                 Style="{StaticResource FlatButton}" Padding="4">
-                            <TextBlock Text="✕" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="✕" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </Button>
                     </Grid>
 
                     <!-- Top-Level Tab Switcher: Server & Provider vs Prompts -->
-                    <Border Grid.Row="1" Background="{StaticResource BgSegmentTrackBrush}"
-                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    <Border Grid.Row="1" Background="{DynamicResource BgSegmentTrackBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                             CornerRadius="8" Padding="1" Height="36" Margin="0,0,0,14">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -1124,9 +1151,30 @@
                     <Grid x:Name="PanelSettingsServer" Grid.Row="2" Visibility="Visible">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="0,0,4,0">
+                                <!-- Appearance / Theme Selection -->
+                                <TextBlock Text="Appearance Theme:" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                                <Border Background="{DynamicResource BgSegmentTrackBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                        CornerRadius="8" Padding="1" Height="32" Margin="0,0,0,14">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Button x:Name="BtnThemeSystem" Grid.Column="0" Click="BtnThemeOption_Click" Tag="System"
+                                                Style="{StaticResource SegmentTabButton}" Content="🌗 System (Auto)" FontSize="11.5"/>
+                                        <Button x:Name="BtnThemeLight" Grid.Column="1" Click="BtnThemeOption_Click" Tag="Light"
+                                                Style="{StaticResource SegmentTabButton}" Content="☀️ Light" FontSize="11.5"/>
+                                        <Button x:Name="BtnThemeDark" Grid.Column="2" Click="BtnThemeOption_Click" Tag="Dark"
+                                                Style="{StaticResource SegmentTabButton}" Content="🌙 Dark" FontSize="11.5"/>
+                                    </Grid>
+                                </Border>
+
                                 <!-- Provider Selection -->
                                 <TextBlock Text="AI Backend Provider:" FontSize="12" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                                           Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
 
                                 <Grid Margin="0,0,0,14">
                                     <Grid.ColumnDefinitions>
@@ -1140,13 +1188,13 @@
                                     <!-- Provider 1: FastFlowLM NPU -->
                                     <Button x:Name="BtnProviderCardNpu" Grid.Column="0" Click="BtnProviderCard_Click" Tag="FastFlowLmNpu"
                                             Style="{StaticResource FlatButton}">
-                                        <Border x:Name="BdProviderCardNpu" Background="{StaticResource BgCardBrush}"
-                                                BorderBrush="{StaticResource AccentBrush}" BorderThickness="1.5"
+                                        <Border x:Name="BdProviderCardNpu" Background="{DynamicResource BgCardBrush}"
+                                                BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1.5"
                                                 CornerRadius="8" Padding="10,10">
                                             <StackPanel>
-                                                <TextBlock Text="⚡ FastFlowLM" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,3"/>
-                                                <TextBlock Text="AMD Ryzen AI NPU" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource GreenBrush}" Margin="0,0,0,4"/>
-                                                <TextBlock Text="Local laptop NPU, 0% GPU load, battery efficient" FontSize="9.5" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                                <TextBlock Text="⚡ FastFlowLM" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,3"/>
+                                                <TextBlock Text="AMD Ryzen AI NPU" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource GreenBrush}" Margin="0,0,0,4"/>
+                                                <TextBlock Text="Local laptop NPU, 0% GPU load, battery efficient" FontSize="9.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                             </StackPanel>
                                         </Border>
                                     </Button>
@@ -1154,13 +1202,13 @@
                                     <!-- Provider 2: LM Studio GPU -->
                                     <Button x:Name="BtnProviderCardLmStudio" Grid.Column="2" Click="BtnProviderCard_Click" Tag="LmStudio"
                                             Style="{StaticResource FlatButton}">
-                                        <Border x:Name="BdProviderCardLmStudio" Background="{StaticResource BgCardBrush}"
-                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1.5"
+                                        <Border x:Name="BdProviderCardLmStudio" Background="{DynamicResource BgCardBrush}"
+                                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1.5"
                                                 CornerRadius="8" Padding="10,10">
                                             <StackPanel>
-                                                <TextBlock Text="🎮 LM Studio" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,3"/>
-                                                <TextBlock Text="GPU / Desktop PC" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" Margin="0,0,0,4"/>
-                                                <TextBlock Text="Desktop PC with GPU server on :1234, deepseek, qwen, llama" FontSize="9.5" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                                <TextBlock Text="🎮 LM Studio" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,3"/>
+                                                <TextBlock Text="GPU / Desktop PC" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,4"/>
+                                                <TextBlock Text="Desktop PC with GPU server on :1234, deepseek, qwen, llama" FontSize="9.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                             </StackPanel>
                                         </Border>
                                     </Button>
@@ -1168,13 +1216,13 @@
                                     <!-- Provider 3: Custom / Ollama -->
                                     <Button x:Name="BtnProviderCardCustom" Grid.Column="4" Click="BtnProviderCard_Click" Tag="Custom"
                                             Style="{StaticResource FlatButton}">
-                                        <Border x:Name="BdProviderCardCustom" Background="{StaticResource BgCardBrush}"
-                                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1.5"
+                                        <Border x:Name="BdProviderCardCustom" Background="{DynamicResource BgCardBrush}"
+                                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1.5"
                                                 CornerRadius="8" Padding="10,10">
                                             <StackPanel>
-                                                <TextBlock Text="🌐 Custom / Ollama" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,3"/>
-                                                <TextBlock Text="OpenAI Compatible" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource YellowBrush}" Margin="0,0,0,4"/>
-                                                <TextBlock Text="Ollama, vLLM, or custom local/network server" FontSize="9.5" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                                <TextBlock Text="🌐 Custom / Ollama" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,3"/>
+                                                <TextBlock Text="OpenAI Compatible" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource YellowBrush}" Margin="0,0,0,4"/>
+                                                <TextBlock Text="Ollama, vLLM, or custom local/network server" FontSize="9.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                             </StackPanel>
                                         </Border>
                                     </Button>
@@ -1182,13 +1230,13 @@
 
                                 <!-- Server URL -->
                                 <TextBlock Text="Server Base URL (OpenAI API Compatible):" FontSize="12" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                                           Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>
                                 <TextBox x:Name="TxtSettingsServerUrl" Style="{StaticResource DarkInputTextBox}"
                                          Margin="0,0,0,8"/>
 
                                 <!-- Preset URL buttons -->
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                                    <TextBlock Text="Presets:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Presets:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <Button Click="BtnPresetUrl_Click" Tag="http://localhost:1234"
                                             Style="{StaticResource DarkPillButton}" Padding="8,3" Margin="0,0,6,0">
                                         <TextBlock Text="🎮 LM Studio (:1234)" FontSize="10.5"/>
@@ -1205,7 +1253,7 @@
 
                                 <!-- API Key (optional) -->
                                 <TextBlock Text="API Key (optional for local servers):" FontSize="12" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                                           Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>
                                 <TextBox x:Name="TxtSettingsApiKey" Style="{StaticResource DarkInputTextBox}"
                                          Margin="0,0,0,14"/>
 
@@ -1219,7 +1267,7 @@
                                     <Button x:Name="BtnTestConnection" Grid.Column="0" Click="BtnTestConnection_Click"
                                             Style="{StaticResource DarkPillButton}" Padding="14,6">
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="🔍 Test Connection" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                            <TextBlock Text="🔍 Test Connection" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                         </StackPanel>
                                     </Button>
 
@@ -1229,14 +1277,14 @@
                                 </Grid>
 
                                 <!-- Informational guide -->
-                                <Border Background="{StaticResource BgCardBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                <Border Background="{DynamicResource BgCardBrush}" BorderBrush="{DynamicResource BorderBrush}"
                                         BorderThickness="1" CornerRadius="8" Padding="12,10">
                                     <StackPanel>
                                         <TextBlock Text="💡 Quick Guide for LM Studio (on Desktop PC):" FontSize="11" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource AccentBrush}" Margin="0,0,0,4"/>
-                                        <TextBlock Text="1. Open LM Studio on your PC and load your desired model (e.g. Qwen, Llama, DeepSeek)." FontSize="10.5" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2"/>
-                                        <TextBlock Text="2. Go to the Developer / Local Server tab in LM Studio and click 'Start Server' (runs on port 1234)." FontSize="10.5" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2"/>
-                                        <TextBlock Text="3. Click 'Test Connection' above. Once verified, click 'Save &amp; Apply'. Models will appear in the main dropdown!" FontSize="10.5" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                   Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,4"/>
+                                        <TextBlock Text="1. Open LM Studio on your PC and load your desired model (e.g. Qwen, Llama, DeepSeek)." FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2"/>
+                                        <TextBlock Text="2. Go to the Developer / Local Server tab in LM Studio and click 'Start Server' (runs on port 1234)." FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2"/>
+                                        <TextBlock Text="3. Click 'Test Connection' above. Once verified, click 'Save &amp; Apply'. Models will appear in the main dropdown!" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -1251,11 +1299,12 @@
                         </Grid.RowDefinitions>
 
                         <!-- Mode Segmented Tabs -->
-                        <Border Grid.Row="0" Background="{StaticResource BgSegmentTrackBrush}"
-                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        <Border Grid.Row="0" Background="{DynamicResource BgSegmentTrackBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                 CornerRadius="8" Padding="1" Height="34" Margin="0,0,0,12">
                             <Grid>
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
@@ -1264,22 +1313,25 @@
                                 <Button x:Name="BtnPromptTabQuickFix" Grid.Column="0" Click="BtnPromptTab_Click" Tag="QuickFix"
                                         Style="{StaticResource SegmentTabButton}" Content="Quick fix" FontSize="12"/>
 
-                                <Button x:Name="BtnPromptTabDetailed" Grid.Column="1" Click="BtnPromptTab_Click" Tag="DetailedReview"
+                                <Button x:Name="BtnPromptTabBrainstorm" Grid.Column="1" Click="BtnPromptTab_Click" Tag="Brainstorm"
+                                        Style="{StaticResource SegmentTabButton}" Content="Brainstorm" FontSize="12"/>
+
+                                <Button x:Name="BtnPromptTabDetailed" Grid.Column="2" Click="BtnPromptTab_Click" Tag="DetailedReview"
                                         Style="{StaticResource SegmentTabButton}" Content="Detailed review" FontSize="12"/>
 
-                                <Button x:Name="BtnPromptTabSummarize" Grid.Column="2" Click="BtnPromptTab_Click" Tag="Summarize"
+                                <Button x:Name="BtnPromptTabSummarize" Grid.Column="3" Click="BtnPromptTab_Click" Tag="Summarize"
                                         Style="{StaticResource SegmentTabButton}" Content="Summarize" FontSize="12"/>
                             </Grid>
                         </Border>
 
                         <!-- Text Editor -->
-                        <Border Grid.Row="1" Background="{StaticResource BgCardBrush}"
-                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        <Border Grid.Row="1" Background="{DynamicResource BgCardBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                                 CornerRadius="8" Padding="10" Margin="0,0,0,14">
                             <TextBox x:Name="TxtPromptEditor"
                                      Background="Transparent"
-                                     Foreground="{StaticResource TextPrimaryBrush}"
-                                     CaretBrush="{StaticResource AccentBrush}"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                     CaretBrush="{DynamicResource AccentBrush}"
                                      BorderThickness="0"
                                      FontSize="12" FontFamily="Consolas, Segoe UI"
                                      AcceptsReturn="True" TextWrapping="Wrap"
@@ -1293,13 +1345,13 @@
                         <Button x:Name="BtnResetPrompt" Click="BtnResetPrompt_Click" HorizontalAlignment="Left"
                                 Style="{StaticResource DarkPillButton}" Padding="12,6" Visibility="Collapsed"
                                 ToolTip="Reset prompt for current mode to factory default">
-                            <TextBlock Text="Reset Prompt to Default" FontSize="12" Foreground="{StaticResource RedBrush}"/>
+                            <TextBlock Text="Reset Prompt to Default" FontSize="12" Foreground="{DynamicResource RedBrush}"/>
                         </Button>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <Button x:Name="BtnCloseSettings" Click="BtnCloseSettings_Click"
                                     Style="{StaticResource DarkPillButton}" Padding="14,6" Margin="0,0,8,0">
-                                <TextBlock Text="Cancel" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock Text="Cancel" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </Button>
 
                             <Button x:Name="BtnSaveSettings" Click="BtnSaveSettings_Click"
@@ -1317,8 +1369,8 @@
                 Grid.Row="0" Grid.RowSpan="9"
                 HorizontalAlignment="Center" VerticalAlignment="Top"
                 Margin="0,10,0,0"
-                Background="#181822"
-                BorderBrush="{StaticResource GreenBrush}" BorderThickness="1.5"
+                Background="{DynamicResource ToastBgBrush}"
+                BorderBrush="{DynamicResource GreenBrush}" BorderThickness="1.5"
                 CornerRadius="8" Padding="14,8"
                 Visibility="Collapsed"
                 IsHitTestVisible="False">
@@ -1327,9 +1379,9 @@
             </Border.Effect>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock x:Name="TxtNotificationIcon" Text="✓" FontSize="13" FontWeight="Bold"
-                           Foreground="{StaticResource GreenBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                           Foreground="{DynamicResource GreenBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                 <TextBlock x:Name="TxtNotificationMessage" Text="FastFlowLM server stopped successfully"
-                           FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                           FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
             </StackPanel>
         </Border>
     </Grid>

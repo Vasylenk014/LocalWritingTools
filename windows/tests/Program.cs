@@ -242,20 +242,30 @@ CHANGES:
                     var window = new MainWindow(flm, settings, hotkey);
                     Console.WriteLine("✓ [PASS] UI XAML: MainWindow initialized without any XAML or template errors.");
 
-                    // Verify tab text & result isolation:
+                    // Verify tab text & result isolation (QuickFix, Brainstorm, DetailedReview, Summarize):
                     window.SetMode(AppMode.QuickFix);
                     window.DraftInputText = "Customer reply draft";
                     window.ResultOutputText = "QuickFix polished output";
+
+                    // Brainstorm shares reply draft, but isolates result buffer!
+                    window.SetMode(AppMode.Brainstorm);
+                    bool brainstormSharedDraft = window.DraftInputText == "Customer reply draft";
+                    bool brainstormIsolatedResult = string.IsNullOrEmpty(window.ResultOutputText);
+                    window.ResultOutputText = "1. First structured step\n2. Second structured step";
                     
-                    // DetailedReview shares reply draft, but MUST NOT share QuickFix result!
+                    // DetailedReview shares reply draft, but MUST NOT share QuickFix or Brainstorm result!
                     window.SetMode(AppMode.DetailedReview);
                     bool detailedSharedDraft = window.DraftInputText == "Customer reply draft";
                     bool detailedIsolatedResult = string.IsNullOrEmpty(window.ResultOutputText);
                     window.ResultOutputText = "CORRECTED:\nDetailed review output";
                     
-                    // Switch back to QuickFix -> restores QuickFix result (NOT DetailedReview result)
+                    // Switch back to QuickFix -> restores QuickFix result
                     window.SetMode(AppMode.QuickFix);
                     bool quickFixResultIsolated = window.ResultOutputText == "QuickFix polished output";
+
+                    // Switch back to Brainstorm -> restores Brainstorm result
+                    window.SetMode(AppMode.Brainstorm);
+                    bool brainstormResultRestored = window.ResultOutputText == "1. First structured step\n2. Second structured step";
 
                     // Switch back to DetailedReview -> restores DetailedReview result
                     window.SetMode(AppMode.DetailedReview);
@@ -284,7 +294,7 @@ CHANGES:
 
                     // Verify Context Active visual indicator when collapsed/expanded
                     bool contextInitiallyHidden = !window.IsContextBadgeVisible;
-                    window.ContextInputText = "Client says: my order #12345 has not arrived yet.";
+                    window.ContextInputText = "Make it shorter and politely decline the refund.";
                     bool contextBadgeShown = window.IsContextBadgeVisible;
                     window.ContextInputText = "";
                     bool contextBadgeCleared = !window.IsContextBadgeVisible;
@@ -297,24 +307,34 @@ CHANGES:
                     bool internalToneSet = window.CurrentTone == TonePreset.Internal;
                     window.CurrentTone = TonePreset.Standard;
 
+                    // Verify Light / Dark / System Auto Theme Switching
+                    window.CurrentTheme = AppTheme.Light;
+                    bool lightThemeApplied = window.CurrentTheme == AppTheme.Light && window.IsLightThemeEffective;
+                    window.CurrentTheme = AppTheme.Dark;
+                    bool darkThemeApplied = window.CurrentTheme == AppTheme.Dark && !window.IsLightThemeEffective;
+                    window.CurrentTheme = AppTheme.System;
+                    bool systemThemeApplied = window.CurrentTheme == AppTheme.System && (window.IsLightThemeEffective == MainWindow.IsWindowsLightTheme());
+                    bool themeChecksWork = lightThemeApplied && darkThemeApplied && systemThemeApplied;
+
                     // Verify startup and reopen mode is always QuickFix
                     window.SetMode(AppMode.Summarize);
                     window.Hide();
                     window.ShowAndActivate();
                     bool reopensQuickFix = window.CurrentMode == AppMode.QuickFix;
 
-                    bool allUiChecks = detailedSharedDraft && detailedIsolatedResult && quickFixResultIsolated &&
+                    bool allUiChecks = brainstormSharedDraft && brainstormIsolatedResult && brainstormResultRestored &&
+                                       detailedSharedDraft && detailedIsolatedResult && quickFixResultIsolated &&
                                        detailedResultRestored && summarizeIsolated && quickFixRestored &&
                                        summarizeRestored && clearResetsWritingWatermark && contextIndicatorWorks &&
-                                       rephraseToneSet && internalToneSet && reopensQuickFix;
+                                       rephraseToneSet && internalToneSet && themeChecksWork && reopensQuickFix;
 
                     if (allUiChecks)
                     {
-                        Console.WriteLine("✓ [PASS] UI State & Isolation: QuickFix/DetailedReview results isolated, Clear resets 'Writing...', Context badge & Internal/Rephrase tones verified.");
+                        Console.WriteLine("✓ [PASS] UI State, Brainstorm & Themes: 4 modes isolated, Light/Dark/System themes verified, Clear & Context badge verified.");
                     }
                     else
                     {
-                        Console.WriteLine($"✗ [FAIL] UI State mismatch: detailedSharedDraft={detailedSharedDraft}, detailedIsolatedResult={detailedIsolatedResult}, quickFixResultIsolated={quickFixResultIsolated}, detailedResultRestored={detailedResultRestored}, clearResetsWritingWatermark={clearResetsWritingWatermark}, contextIndicatorWorks={contextIndicatorWorks}, rephraseToneSet={rephraseToneSet}, internalToneSet={internalToneSet}, reopensQuickFix={reopensQuickFix}");
+                        Console.WriteLine($"✗ [FAIL] UI State mismatch: brainstorm={brainstormSharedDraft}/{brainstormIsolatedResult}/{brainstormResultRestored}, theme={themeChecksWork}, clear={clearResetsWritingWatermark}, context={contextIndicatorWorks}");
                     }
 
                     tcs.SetResult(allUiChecks);
@@ -776,6 +796,41 @@ CHANGES:
         catch (Exception ex)
         {
             Console.WriteLine($"✗ [FAIL] Rephrase & Internal Prompts: {ex.Message}");
+            failed++;
+        }
+
+        // 21. Brainstorm Prompts, Context Instructions & Light-Theme Markdown Numbered Lists
+        try
+        {
+            var bsPrompt = AppSettings.GetDefaultPrompt(AppMode.Brainstorm);
+            var bsInternalPrompt = AppSettings.DefaultInternalBrainstormPrompt;
+            var qfPrompt = AppSettings.GetDefaultPrompt(AppMode.QuickFix);
+
+            bool brainstormPromptsValid = !string.IsNullOrWhiteSpace(bsPrompt) &&
+                                          bsPrompt.Contains("step by step", StringComparison.OrdinalIgnoreCase) &&
+                                          !string.IsNullOrWhiteSpace(bsInternalPrompt) &&
+                                          bsInternalPrompt.Contains("colleague", StringComparison.OrdinalIgnoreCase);
+
+            bool contextSupportsInstructions = qfPrompt.Contains("specific processing request or instruction", StringComparison.OrdinalIgnoreCase) &&
+                                               bsPrompt.Contains("specific instructions or processing requests", StringComparison.OrdinalIgnoreCase);
+
+            var lightDoc = MarkdownDocumentRenderer.Render("1. **Step One**: Check card\n2. **Step Two**: Retry payment", isLightTheme: true);
+            bool lightMarkdownValid = lightDoc != null && lightDoc.Blocks.Count == 2;
+
+            if (brainstormPromptsValid && contextSupportsInstructions && lightMarkdownValid)
+            {
+                Console.WriteLine("✓ [PASS] Brainstorm & Context Instructions: Step-by-step explainer prompts, custom instructions in <context>, and Light-theme numbered lists verified.");
+                passed++;
+            }
+            else
+            {
+                Console.WriteLine("✗ [FAIL] Brainstorm & Context Instructions: Validation failed.");
+                failed++;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"✗ [FAIL] Brainstorm & Context Instructions: {ex.Message}");
             failed++;
         }
 
