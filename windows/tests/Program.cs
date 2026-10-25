@@ -328,7 +328,7 @@ CHANGES:
                     window.UpdateResponsiveHeaderLayout(746);
                     bool defaultHeaderOk = window.ModelDropdownWidth >= 180 && window.ModelDropdownWidth <= 260 && !window.IsHotkeyBadgeVisible;
                     window.UpdateResponsiveHeaderLayout(1024);
-                    bool wideHeaderOk = window.ModelDropdownWidth >= 180 && window.ModelDropdownWidth <= 260 && window.IsHotkeyBadgeVisible;
+                    bool wideHeaderOk = window.ModelDropdownWidth >= 180 && window.ModelDropdownWidth <= 260 && window.Title.Contains("Alt+Shift+G");
                     bool responsiveHeaderChecks = narrowHeaderOk && defaultHeaderOk && wideHeaderOk;
 
                     bool allUiChecks = brainstormSharedDraft && brainstormIsolatedResult && brainstormResultRestored &&

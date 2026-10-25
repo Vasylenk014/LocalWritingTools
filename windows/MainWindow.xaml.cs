@@ -387,8 +387,8 @@ public partial class MainWindow : Window
             TxtUnloadLmStudioBtn.Text = isCompact ? "⏏ VRAM" : "⏏ Free VRAM";
         }
 
-        // Show static hotkey reminder badge only when window is wide enough (>= 780px)
-        BdHotkeyBadge.Visibility = winWidth >= 780 ? Visibility.Visible : Visibility.Collapsed;
+        // Hotkey hint is now permanently displayed in the Window Title bar
+        BdHotkeyBadge.Visibility = Visibility.Collapsed;
 
         if (overrideWidth.HasValue)
         {

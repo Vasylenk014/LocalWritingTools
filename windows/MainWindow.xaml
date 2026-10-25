@@ -1,7 +1,7 @@
 <Window x:Class="WritingTools.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Local Writing Tools"
+        Title="Local Writing Tools  •  Alt+Shift+G (process selected text anywhere)"
         Icon="app.ico"
         Width="700" Height="820"
         MinWidth="580" MinHeight="640"
@@ -614,7 +614,7 @@
                 </Button>
 
                 <!-- Windows Hotkey Badge Pill (Same Height="30" & centered text as all buttons, auto-collapses when narrow) -->
-                <Border x:Name="BdHotkeyBadge" Height="30" VerticalAlignment="Center"
+                <Border x:Name="BdHotkeyBadge" Visibility="Collapsed" Height="30" VerticalAlignment="Center"
                         Background="{DynamicResource BgPillBrush}"
                         BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                         CornerRadius="7" Padding="8,0" Margin="6,0,0,0"
