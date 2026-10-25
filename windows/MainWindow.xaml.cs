@@ -114,6 +114,7 @@ public partial class MainWindow : Window
         _flmService.ConfigureProvider(provider, _settingsService.Settings.GetEffectiveBaseUrl(), _settingsService.Settings.CustomApiKey);
         _metricsService.SetProvider(provider);
         UpdateProviderUi(provider);
+        UpdateResponsiveHeaderLayout();
 
         // Start system telemetry monitoring (RAM and AMD Ryzen AI NPU / GPU)
         _metricsService.Start();
@@ -358,6 +359,31 @@ public partial class MainWindow : Window
 
     #region Window Controls & Navigation
 
+    private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateResponsiveHeaderLayout();
+    }
+
+    public void UpdateResponsiveHeaderLayout(double? overrideWidth = null)
+    {
+        if (CmbModels == null || BdHotkeyBadge == null) return;
+
+        double winWidth = overrideWidth ?? (ActualWidth > 0 ? ActualWidth : Width);
+        if (double.IsNaN(winWidth) || winWidth <= 0) winWidth = 700;
+
+        // Auto-hide static hotkey reminder badge on narrower windows (< 760px) so interactive buttons never clip
+        bool showHotkeyBadge = winWidth >= 760;
+        BdHotkeyBadge.Visibility = showHotkeyBadge ? Visibility.Visible : Visibility.Collapsed;
+
+        // Calculate ideal clamped width for CmbModels (always readable: 130px..260px, never tiny, never overly stretched)
+        double otherControlsWidth = showHotkeyBadge ? 535 : 445;
+        double targetModelWidth = Math.Clamp(winWidth - otherControlsWidth, 130, 260);
+        CmbModels.Width = targetModelWidth;
+    }
+
+    public double ModelDropdownWidth => CmbModels.Width;
+    public bool IsHotkeyBadgeVisible => BdHotkeyBadge.Visibility == Visibility.Visible;
+
     private void BtnQuit_Click(object sender, RoutedEventArgs e)
     {
         _isExplicitExit = true;
@@ -493,7 +519,6 @@ public partial class MainWindow : Window
 
         var models = await _flmService.GetModelsAsync();
         CmbModels.ItemsSource = models;
-        CmbModels.DisplayMemberPath = nameof(FlmModelInfo.DisplayName);
 
         if (models.Count > 0)
         {
@@ -685,6 +710,7 @@ public partial class MainWindow : Window
         string modelToLoad = "gemma4-it:e4b";
         if (CmbModels.SelectedItem is FlmModelInfo selected)
         {
+            CmbModels.ToolTip = $"Selected model: {selected.DisplayName}";
             modelToLoad = selected.ModelId;
         }
 
@@ -794,6 +820,7 @@ public partial class MainWindow : Window
     {
         if (CmbModels.SelectedItem is FlmModelInfo selected)
         {
+            CmbModels.ToolTip = $"Selected model: {selected.DisplayName}";
             if (_flmService.CurrentProvider == LlmProvider.LmStudio)
             {
                 _settingsService.Settings.SelectedLmStudioModel = selected.ModelId;

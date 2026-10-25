@@ -11,7 +11,7 @@
         Background="{DynamicResource BgDarkBrush}"
         ShowInTaskbar="True"
         Topmost="False"
-        KeyDown="Window_KeyDown">
+        KeyDown="Window_KeyDown" SizeChanged="Window_SizeChanged">
 
     <Window.Resources>
         <!-- OLED Dark Theme Palette -->
@@ -349,9 +349,10 @@
                                 <Grid x:Name="DropDown"
                                       SnapsToDevicePixels="True"
                                       MinWidth="{TemplateBinding ActualWidth}"
-                                      MaxHeight="260"
+                                      MaxHeight="280"
                                       Margin="0,4,0,8">
                                     <Border x:Name="DropDownBorder"
+                                            MinWidth="230"
                                             Background="{DynamicResource BgSurfaceBrush}"
                                             BorderBrush="{DynamicResource BorderBrush}"
                                             BorderThickness="1"
@@ -478,19 +479,20 @@
         <!-- ROW 0: MODEL & SERVER CONTROLS + HISTORY & HOTKEY -->
         <Grid Grid.Row="0" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/> <!-- Status Dot & Model: Label -->
-                <ColumnDefinition Width="*"/>    <!-- Model Dropdown -->
-                <ColumnDefinition Width="Auto"/> <!-- Refresh Button -->
-                <ColumnDefinition Width="Auto"/> <!-- Server Start/Stop Controls -->
-                <ColumnDefinition Width="Auto"/> <!-- Theme Toggle Button -->
-                <ColumnDefinition Width="Auto"/> <!-- Prompts Config Button -->
-                <ColumnDefinition Width="Auto"/> <!-- History Pill -->
-                <ColumnDefinition Width="Auto"/> <!-- Hotkey Badge -->
+                <ColumnDefinition Width="Auto"/> <!-- 0: Provider Selector -->
+                <ColumnDefinition Width="Auto"/> <!-- 1: Model Dropdown (Clamped responsive width) -->
+                <ColumnDefinition Width="Auto"/> <!-- 2: Refresh Button -->
+                <ColumnDefinition Width="Auto"/> <!-- 3: Server Start/Stop or Free VRAM -->
+                <ColumnDefinition Width="*"/>    <!-- 4: Elastic Spacer -->
+                <ColumnDefinition Width="Auto"/> <!-- 5: Theme Toggle Button -->
+                <ColumnDefinition Width="Auto"/> <!-- 6: Settings Button -->
+                <ColumnDefinition Width="Auto"/> <!-- 7: History Pill -->
+                <ColumnDefinition Width="Auto"/> <!-- 8: Hotkey Badge (auto-hides on narrow window) -->
             </Grid.ColumnDefinitions>
 
             <!-- Status Dot & AI Provider Selector Dropdown Pill -->
             <Button x:Name="BtnProviderMenu" Grid.Column="0" Click="BtnProviderMenu_Click"
-                    Style="{StaticResource DarkPillButton}" Margin="0,0,8,0" Padding="8,4"
+                    Style="{StaticResource DarkPillButton}" Margin="0,0,6,0" Padding="8,4"
                     ToolTip="Switch AI Provider (⚡ FastFlowLM NPU / 🎮 LM Studio GPU / 🌐 Custom)">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Ellipse x:Name="StatusDot" Width="8" Height="8"
@@ -511,22 +513,28 @@
                 </Button.ContextMenu>
             </Button>
 
-            <!-- Model Dropdown Pill -->
+            <!-- Model Dropdown Pill (Responsive clamped width: never tiny, never overly stretched) -->
             <ComboBox x:Name="CmbModels" Grid.Column="1" Style="{StaticResource DarkComboBox}"
-                      Height="30" Margin="0,0,8,0"
+                      Width="220" MinWidth="130" MaxWidth="260" Height="30" Margin="0,0,6,0"
                       SelectionChanged="CmbModels_SelectionChanged"
-                      ToolTip="Select model from current AI provider"/>
+                      ToolTip="Select model from current AI provider">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
 
             <!-- Refresh Button -->
             <Button x:Name="BtnRefresh" Grid.Column="2" Click="BtnRefresh_Click"
-                    Width="30" Height="30" Margin="0,0,8,0"
+                    Width="30" Height="30" Margin="0,0,6,0"
                     Style="{StaticResource DarkPillButton}" Padding="0"
                     ToolTip="Refresh installed models and check server status">
                 <TextBlock Text="🔄" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Button>
 
-            <!-- Server Management: FLM Start/Stop or LM Studio status badge -->
-            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+            <!-- Server Management: FLM Start/Stop or LM Studio Free VRAM -->
+            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
                 <StackPanel x:Name="PanelFlmControls" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button x:Name="BtnStartServer" Click="BtnStartServer_Click"
                             Style="{StaticResource DarkPillButton}"
@@ -546,17 +554,15 @@
                     </Button>
                 </StackPanel>
 
-                <!-- LM Studio Controls (Status + Free VRAM) -->
-                <StackPanel x:Name="PanelLmStudioControls" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0" Visibility="Collapsed">
-                    <Border x:Name="BdLmStudioStatus"
+                <!-- LM Studio Controls (Free VRAM button; redundant status pill collapsed to save toolbar width) -->
+                <StackPanel x:Name="PanelLmStudioControls" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                    <Border x:Name="BdLmStudioStatus" Visibility="Collapsed"
                             Background="{DynamicResource BgPillBrush}" BorderBrush="{DynamicResource BorderBrush}"
-                            BorderThickness="1" CornerRadius="7" Padding="8,4"
-                            ToolTip="External Server Status">
-                        <TextBlock x:Name="TxtLmStudioStatus" Text="LM Studio :1234" FontSize="11" FontWeight="Medium"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            BorderThickness="1" CornerRadius="7" Padding="8,4">
+                        <TextBlock x:Name="TxtLmStudioStatus" Text="LM Studio :1234" FontSize="11"/>
                     </Border>
                     <Button x:Name="BtnUnloadLmStudio" Click="BtnUnloadLmStudio_Click"
-                            Style="{StaticResource DarkPillButton}" Margin="4,0,0,0" Padding="8,4"
+                            Style="{StaticResource DarkPillButton}" Padding="8,4"
                             ToolTip="Unload model from GPU memory and free VRAM">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="⏏ Free VRAM" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource RedBrush}"/>
@@ -566,7 +572,7 @@
             </StackPanel>
 
             <!-- Theme Toggle Button (Auto / Light / Dark) -->
-            <Button x:Name="BtnThemeToggle" Grid.Column="4" Click="BtnThemeToggle_Click"
+            <Button x:Name="BtnThemeToggle" Grid.Column="5" Click="BtnThemeToggle_Click"
                     Style="{DynamicResource DarkPillButton}"
                     Margin="0,0,6,0" Padding="8,4"
                     ToolTip="Switch Theme: Auto (System) / Light / Dark">
@@ -575,7 +581,7 @@
             </Button>
 
             <!-- System Settings Configuration Button -->
-            <Button x:Name="BtnSettingsConfig" Grid.Column="5" Click="BtnSettingsConfig_Click"
+            <Button x:Name="BtnSettingsConfig" Grid.Column="6" Click="BtnSettingsConfig_Click"
                     Style="{DynamicResource DarkPillButton}"
                     Margin="0,0,6,0" Padding="8,4"
                     ToolTip="Server, Theme &amp; System Prompts Settings">
@@ -583,9 +589,9 @@
             </Button>
 
             <!-- History Pill Button -->
-            <Button x:Name="BtnHistory" Grid.Column="6" Click="BtnHistory_Click"
+            <Button x:Name="BtnHistory" Grid.Column="7" Click="BtnHistory_Click"
                     Style="{DynamicResource DarkPillButton}"
-                    Margin="0,0,6,0" Padding="8,4"
+                    Margin="0,0,0,0" Padding="8,4"
                     ToolTip="Recent history (last 15 checks)">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="🕒" FontSize="11" Margin="0,0,4,0"/>
@@ -594,16 +600,15 @@
                 </StackPanel>
             </Button>
 
-            <!-- Windows Hotkey Badge Pill -->
-            <Border Grid.Column="7" Background="{DynamicResource BgPillBrush}"
+            <!-- Windows Hotkey Badge Pill (Visible when window has room, auto-collapses on narrow widths) -->
+            <Border x:Name="BdHotkeyBadge" Grid.Column="8" Background="{DynamicResource BgPillBrush}"
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                    CornerRadius="7" Padding="8,4"
+                    CornerRadius="7" Padding="8,4" Margin="6,0,0,0"
                     ToolTip="Global Windows shortcut to process highlighted text">
                 <TextBlock Text="Alt+Shift+G" FontSize="11" FontWeight="Medium"
                            Foreground="{DynamicResource TextSecondaryBrush}"/>
             </Border>
         </Grid>
-
         <!-- ROW 1: THINKING SEGMENTED CONTROL (Full-width clean segments) -->
         <Grid x:Name="RowThinking" Grid.Row="1" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
