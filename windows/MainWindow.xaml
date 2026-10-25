@@ -647,73 +647,112 @@
             </Grid>
         </Border>
 
-        <!-- ROW 3: TONE PRESETS (Quick fix only) -->
-        <StackPanel x:Name="PanelTones" Grid.Row="3" Orientation="Horizontal"
-                    HorizontalAlignment="Center" Margin="0,0,0,10">
+        <!-- ROW 3: TONE & AUDIENCE PRESETS -->
+        <WrapPanel x:Name="PanelTones" Grid.Row="3" Orientation="Horizontal"
+                   HorizontalAlignment="Center" Margin="0,0,0,10">
             <Button x:Name="BtnToneStandard" Click="BtnTone_Click" Tag="Standard"
-                    Style="{StaticResource FlatButton}" Margin="0,0,6,0">
+                    Style="{StaticResource FlatButton}" Margin="0,0,5,4"
+                    ToolTip="Standard customer support reply â€” natural, warm, and helpful">
                 <Border x:Name="BdToneStandard" Background="{StaticResource AccentActiveBrush}"
                         BorderBrush="{StaticResource AccentBrush}" BorderThickness="1"
-                        CornerRadius="14" Padding="12,5">
+                        CornerRadius="14" Padding="10,5">
                     <TextBlock x:Name="TxtToneStandard" Text="✨ Standard" FontSize="12" FontWeight="SemiBold"
                                Foreground="{StaticResource AccentBrush}"/>
                 </Border>
             </Button>
 
             <Button x:Name="BtnToneFriendly" Click="BtnTone_Click" Tag="Friendly"
-                    Style="{StaticResource FlatButton}" Margin="0,0,6,0">
+                    Style="{StaticResource FlatButton}" Margin="0,0,5,4"
+                    ToolTip="Warm, empathetic, and approachable customer tone">
                 <Border x:Name="BdToneFriendly" Background="{StaticResource BgPillBrush}"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                        CornerRadius="14" Padding="12,5">
+                        CornerRadius="14" Padding="10,5">
                     <TextBlock x:Name="TxtToneFriendly" Text="🤝 Friendly" FontSize="12" FontWeight="Normal"
                                Foreground="{StaticResource TextSecondaryBrush}"/>
                 </Border>
             </Button>
 
             <Button x:Name="BtnToneConcise" Click="BtnTone_Click" Tag="Concise"
-                    Style="{StaticResource FlatButton}" Margin="0,0,6,0">
+                    Style="{StaticResource FlatButton}" Margin="0,0,5,4"
+                    ToolTip="Short, direct, and efficient without extra fluff">
                 <Border x:Name="BdToneConcise" Background="{StaticResource BgPillBrush}"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                        CornerRadius="14" Padding="12,5">
+                        CornerRadius="14" Padding="10,5">
                     <TextBlock x:Name="TxtToneConcise" Text="⚡️ Concise" FontSize="12" FontWeight="Normal"
                                Foreground="{StaticResource TextSecondaryBrush}"/>
                 </Border>
             </Button>
 
             <Button x:Name="BtnToneDeescalate" Click="BtnTone_Click" Tag="Deescalate"
-                    Style="{StaticResource FlatButton}" Margin="0,0,6,0">
+                    Style="{StaticResource FlatButton}" Margin="0,0,5,4"
+                    ToolTip="Calm, reassuring, and diplomatic tone to de-escalate frustrated customers">
                 <Border x:Name="BdToneDeescalate" Background="{StaticResource BgPillBrush}"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                        CornerRadius="14" Padding="12,5">
+                        CornerRadius="14" Padding="10,5">
                     <TextBlock x:Name="TxtToneDeescalate" Text="🛡️ De-escalate" FontSize="12" FontWeight="Normal"
                                Foreground="{StaticResource TextSecondaryBrush}"/>
                 </Border>
             </Button>
 
             <Button x:Name="BtnToneFormal" Click="BtnTone_Click" Tag="Formal"
-                    Style="{StaticResource FlatButton}">
+                    Style="{StaticResource FlatButton}" Margin="0,0,5,4"
+                    ToolTip="Strictly professional, structured business tone">
                 <Border x:Name="BdToneFormal" Background="{StaticResource BgPillBrush}"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                        CornerRadius="14" Padding="12,5">
+                        CornerRadius="14" Padding="10,5">
                     <TextBlock x:Name="TxtToneFormal" Text="👔 Formal" FontSize="12" FontWeight="Normal"
                                Foreground="{StaticResource TextSecondaryBrush}"/>
                 </Border>
             </Button>
-        </StackPanel>
+
+            <Button x:Name="BtnToneRephrase" Click="BtnTone_Click" Tag="Rephrase"
+                    Style="{StaticResource FlatButton}" Margin="0,0,5,4"
+                    ToolTip="Paraphrase with fresh wording so repeated / follow-up replies to a user don't look copy-pasted">
+                <Border x:Name="BdToneRephrase" Background="{StaticResource BgPillBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="14" Padding="10,5">
+                    <TextBlock x:Name="TxtToneRephrase" Text="🔄 Rephrase" FontSize="12" FontWeight="Normal"
+                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                </Border>
+            </Button>
+
+            <Button x:Name="BtnToneInternal" Click="BtnTone_Click" Tag="Internal"
+                    Style="{StaticResource FlatButton}" Margin="0,0,0,4"
+                    ToolTip="Edit internal ticket notes or messages to colleagues (direct, teammate-to-teammate tone)">
+                <Border x:Name="BdToneInternal" Background="{StaticResource BgPillBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                        CornerRadius="14" Padding="10,5">
+                    <TextBlock x:Name="TxtToneInternal" Text="💬 Internal" FontSize="12" FontWeight="Normal"
+                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                </Border>
+            </Button>
+        </WrapPanel>
 
         <!-- ROW 4: TICKET CONTEXT (Optional) -->
-        <StackPanel Grid.Row="4" Margin="0,0,0,8">
+        <Border x:Name="BdContextContainer" Grid.Row="4" Margin="0,0,0,8"
+                Background="Transparent" BorderBrush="Transparent"
+                BorderThickness="1" CornerRadius="8" Padding="8,2">
             <!-- Ticket Context Expander -->
             <Expander x:Name="ExpContext" Style="{StaticResource DarkExpander}">
                 <Expander.Header>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Ticket context / Client message (optional)" FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <TextBlock x:Name="LblContextHeader" Text="Ticket context / Client message (optional)" FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                         <Border x:Name="BadgeContextActive" Visibility="Collapsed"
-                                Background="{StaticResource AccentActiveBrush}" CornerRadius="6"
-                                Padding="6,1" Margin="8,0,0,0">
-                            <TextBlock Text="Active" FontSize="10" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                                Background="#143525" BorderBrush="#22C55E" BorderThickness="1"
+                                CornerRadius="6" Padding="7,1.5" Margin="8,0,0,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtContextBadge" Text="● Context active" FontSize="10.5"
+                                       FontWeight="SemiBold" Foreground="#4ADE80"/>
                         </Border>
+                        <TextBlock x:Name="TxtContextPreview" Visibility="Collapsed" Text=""
+                                   FontSize="11" FontStyle="Italic"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="8,0,0,0"
+                                   MaxWidth="220" TextTrimming="CharacterEllipsis"/>
+                        <Button x:Name="BtnHeaderContextClear" Visibility="Collapsed"
+                                Click="BtnContextClear_Click" Style="{StaticResource DarkPillButton}"
+                                Content="✕ Clear" FontSize="10" Padding="6,1" Margin="8,0,0,0"
+                                VerticalAlignment="Center" ToolTip="Clear ticket context"/>
                     </StackPanel>
                 </Expander.Header>
                 <Border Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
@@ -739,8 +778,7 @@
                     </Grid>
                 </Border>
             </Expander>
-        </StackPanel>
-
+        </Border>
         <!-- ROW 5: DRAFT INPUT BOX -->
         <Grid Grid.Row="5" Margin="0,0,0,10">
             <Grid.RowDefinitions>

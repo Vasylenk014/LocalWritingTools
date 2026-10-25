@@ -13,7 +13,9 @@ public enum TonePreset
     Friendly,
     Concise,
     Deescalate,
-    Formal
+    Formal,
+    Rephrase,
+    Internal
 }
 
 public enum ThinkingOption

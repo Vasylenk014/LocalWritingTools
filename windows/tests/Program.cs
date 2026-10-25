@@ -242,17 +242,28 @@ CHANGES:
                     var window = new MainWindow(flm, settings, hotkey);
                     Console.WriteLine("✓ [PASS] UI XAML: MainWindow initialized without any XAML or template errors.");
 
-                    // Verify tab text isolation:
+                    // Verify tab text & result isolation:
                     window.SetMode(AppMode.QuickFix);
                     window.DraftInputText = "Customer reply draft";
+                    window.ResultOutputText = "QuickFix polished output";
                     
-                    // DetailedReview shares reply draft
+                    // DetailedReview shares reply draft, but MUST NOT share QuickFix result!
                     window.SetMode(AppMode.DetailedReview);
-                    bool detailedShared = window.DraftInputText == "Customer reply draft";
+                    bool detailedSharedDraft = window.DraftInputText == "Customer reply draft";
+                    bool detailedIsolatedResult = string.IsNullOrEmpty(window.ResultOutputText);
+                    window.ResultOutputText = "CORRECTED:\nDetailed review output";
                     
+                    // Switch back to QuickFix -> restores QuickFix result (NOT DetailedReview result)
+                    window.SetMode(AppMode.QuickFix);
+                    bool quickFixResultIsolated = window.ResultOutputText == "QuickFix polished output";
+
+                    // Switch back to DetailedReview -> restores DetailedReview result
+                    window.SetMode(AppMode.DetailedReview);
+                    bool detailedResultRestored = window.ResultOutputText == "CORRECTED:\nDetailed review output";
+
                     // Summarize is isolated (starts empty)
                     window.SetMode(AppMode.Summarize);
-                    bool summarizeIsolated = string.IsNullOrEmpty(window.DraftInputText);
+                    bool summarizeIsolated = string.IsNullOrEmpty(window.DraftInputText) && string.IsNullOrEmpty(window.ResultOutputText);
                     
                     // Enter ticket in Summarize
                     window.DraftInputText = "Long verbose customer inquiry";
@@ -265,22 +276,48 @@ CHANGES:
                     window.SetMode(AppMode.Summarize);
                     bool summarizeRestored = window.DraftInputText == "Long verbose customer inquiry";
 
+                    // Verify Clear resets leftover "Writing... ▋" watermark text
+                    window.SetMode(AppMode.QuickFix);
+                    window.EmptyResultWatermarkText = "Writing... ▋";
+                    window.ClearDraftAndResult();
+                    bool clearResetsWritingWatermark = string.IsNullOrEmpty(window.EmptyResultWatermarkText) && string.IsNullOrEmpty(window.ResultOutputText);
+
+                    // Verify Context Active visual indicator when collapsed/expanded
+                    bool contextInitiallyHidden = !window.IsContextBadgeVisible;
+                    window.ContextInputText = "Client says: my order #12345 has not arrived yet.";
+                    bool contextBadgeShown = window.IsContextBadgeVisible;
+                    window.ContextInputText = "";
+                    bool contextBadgeCleared = !window.IsContextBadgeVisible;
+                    bool contextIndicatorWorks = contextInitiallyHidden && contextBadgeShown && contextBadgeCleared;
+
+                    // Verify TonePreset.Rephrase and TonePreset.Internal selection
+                    window.CurrentTone = TonePreset.Rephrase;
+                    bool rephraseToneSet = window.CurrentTone == TonePreset.Rephrase;
+                    window.CurrentTone = TonePreset.Internal;
+                    bool internalToneSet = window.CurrentTone == TonePreset.Internal;
+                    window.CurrentTone = TonePreset.Standard;
+
                     // Verify startup and reopen mode is always QuickFix
                     window.SetMode(AppMode.Summarize);
                     window.Hide();
                     window.ShowAndActivate();
                     bool reopensQuickFix = window.CurrentMode == AppMode.QuickFix;
 
-                    if (detailedShared && summarizeIsolated && quickFixRestored && summarizeRestored && reopensQuickFix)
+                    bool allUiChecks = detailedSharedDraft && detailedIsolatedResult && quickFixResultIsolated &&
+                                       detailedResultRestored && summarizeIsolated && quickFixRestored &&
+                                       summarizeRestored && clearResetsWritingWatermark && contextIndicatorWorks &&
+                                       rephraseToneSet && internalToneSet && reopensQuickFix;
+
+                    if (allUiChecks)
                     {
-                        Console.WriteLine("✓ [PASS] Tab Isolation & Default Tab: App always starts/reopens on QuickFix, tabs isolate buffers.");
+                        Console.WriteLine("✓ [PASS] UI State & Isolation: QuickFix/DetailedReview results isolated, Clear resets 'Writing...', Context badge & Internal/Rephrase tones verified.");
                     }
                     else
                     {
-                        Console.WriteLine($"✗ [FAIL] Tab Isolation mismatch: detailedShared={detailedShared}, summarizeIsolated={summarizeIsolated}, quickFixRestored={quickFixRestored}, summarizeRestored={summarizeRestored}, reopensQuickFix={reopensQuickFix}");
+                        Console.WriteLine($"✗ [FAIL] UI State mismatch: detailedSharedDraft={detailedSharedDraft}, detailedIsolatedResult={detailedIsolatedResult}, quickFixResultIsolated={quickFixResultIsolated}, detailedResultRestored={detailedResultRestored}, clearResetsWritingWatermark={clearResetsWritingWatermark}, contextIndicatorWorks={contextIndicatorWorks}, rephraseToneSet={rephraseToneSet}, internalToneSet={internalToneSet}, reopensQuickFix={reopensQuickFix}");
                     }
 
-                    tcs.SetResult(detailedShared && summarizeIsolated && quickFixRestored && summarizeRestored && reopensQuickFix);
+                    tcs.SetResult(allUiChecks);
                 }
                 catch (Exception ex)
                 {
@@ -705,6 +742,40 @@ CHANGES:
         catch (Exception ex)
         {
             Console.WriteLine($"✗ [FAIL] Reasoning Capability: {ex.Message}");
+            failed++;
+        }
+
+        // 20. Rephrase & Internal Colleague Prompts Verification
+        try
+        {
+            var rephrasePrompt = AppSettings.DefaultRephrasePrompt;
+            var internalPrompt = AppSettings.DefaultInternalPrompt;
+            var internalReviewPrompt = AppSettings.DefaultInternalDetailedReviewPrompt;
+
+            bool rephraseValid = !string.IsNullOrWhiteSpace(rephrasePrompt) &&
+                                 rephrasePrompt.Contains("rephrase", StringComparison.OrdinalIgnoreCase) &&
+                                 rephrasePrompt.Contains("<draft></draft>", StringComparison.Ordinal);
+            bool internalValid = !string.IsNullOrWhiteSpace(internalPrompt) &&
+                                 internalPrompt.Contains("colleague", StringComparison.OrdinalIgnoreCase) &&
+                                 internalPrompt.Contains("internal", StringComparison.OrdinalIgnoreCase);
+            bool internalReviewValid = !string.IsNullOrWhiteSpace(internalReviewPrompt) &&
+                                       internalReviewPrompt.Contains("CORRECTED:", StringComparison.Ordinal) &&
+                                       internalReviewPrompt.Contains("colleague", StringComparison.OrdinalIgnoreCase);
+
+            if (rephraseValid && internalValid && internalReviewValid)
+            {
+                Console.WriteLine("✓ [PASS] Rephrase & Internal Prompts: Dedicated prompts for Rephrase and Internal colleague notes verified.");
+                passed++;
+            }
+            else
+            {
+                Console.WriteLine("✗ [FAIL] Rephrase & Internal Prompts: Prompt validation failed.");
+                failed++;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"✗ [FAIL] Rephrase & Internal Prompts: {ex.Message}");
             failed++;
         }
 

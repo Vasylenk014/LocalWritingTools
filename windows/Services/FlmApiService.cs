@@ -793,13 +793,14 @@ public class FlmApiService
         string userPrompt,
         ThinkingOption thinkingOption,
         IProgress<StreamChunkEventArgs> progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        double temperature = 0.2)
     {
         if (_currentProvider == LlmProvider.LmStudio)
         {
             try
             {
-                await StreamLmStudioNativeAsync(model, systemPrompt, userPrompt, thinkingOption, progress, cancellationToken);
+                await StreamLmStudioNativeAsync(model, systemPrompt, userPrompt, thinkingOption, progress, cancellationToken, temperature);
                 return;
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -808,7 +809,7 @@ public class FlmApiService
             }
         }
 
-        await StreamOpenAiCompatibleAsync(model, systemPrompt, userPrompt, thinkingOption, progress, cancellationToken);
+        await StreamOpenAiCompatibleAsync(model, systemPrompt, userPrompt, thinkingOption, progress, cancellationToken, temperature);
     }
 
     private async Task StreamOpenAiCompatibleAsync(
@@ -817,7 +818,8 @@ public class FlmApiService
         string userPrompt,
         ThinkingOption thinkingOption,
         IProgress<StreamChunkEventArgs> progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        double temperature = 0.2)
     {
         var messages = new List<object>
         {
@@ -829,7 +831,7 @@ public class FlmApiService
         {
             ["model"] = model,
             ["messages"] = messages,
-            ["temperature"] = 0.2,
+            ["temperature"] = temperature,
             ["max_tokens"] = 2048,
             ["stream"] = true,
             ["stream_options"] = new { include_usage = true }
@@ -1065,14 +1067,15 @@ public class FlmApiService
         string userPrompt,
         ThinkingOption thinkingOption,
         IProgress<StreamChunkEventArgs> progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        double temperature = 0.2)
     {
         var requestObj = new Dictionary<string, object>
         {
             ["model"] = model,
             ["system_prompt"] = systemPrompt,
             ["input"] = userPrompt,
-            ["temperature"] = 0.2,
+            ["temperature"] = temperature,
             ["stream"] = true,
             ["store"] = false
         };

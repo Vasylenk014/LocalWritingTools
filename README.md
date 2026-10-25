@@ -42,7 +42,7 @@ Customer support teams handle sensitive customer information, ticket threads, or
   - Dynamically shows **NPU:** load when running on laptop Ryzen AI.
   - Dynamically shows **GPU:** load when running on desktop LM Studio.
 - 🕒 **Recent Checks History:** Keeps your last 15 checks locally in secure app storage with quick `Restore` and `Copy` buttons.
-- 🧪 **Automated Verification:** Comprehensive automated test suite with 13 built-in verification tests.
+- 🧪 **Automated Verification:** Comprehensive automated test suite with 20 built-in verification tests.
 
 ---
 
@@ -58,7 +58,7 @@ LocalWritingTools/
 ├── windows/                   # Native Windows app (C# .NET 8 WPF, OLED dark theme)
 │   ├── Models/                # Data models (AppSettings, FlmModel, HistoryItem)
 │   ├── Services/              # Backend services (API, Diff, Telemetry, Hotkey, SmartCopy)
-│   ├── tests/                 # Automated test suite (13 passing tests)
+│   ├── tests/                 # Automated test suite (20 passing tests)
 │   ├── MainWindow.xaml/.cs    # Main UI window, streaming, provider controls
 │   └── WritingTools.csproj    # .NET 8 project file
 ├── shared/                    # Standardized system prompts & assets

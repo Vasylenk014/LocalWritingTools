@@ -54,9 +54,10 @@ public partial class MainWindow : Window
     private bool _isThinking;
     private int _thinkingChars;
 
-    // Buffer separation: QuickFix and DetailedReview share draft/result, Summarize maintains its own
+    // Buffer separation: QuickFix and DetailedReview share draft text, but each mode maintains its own independent Result buffer
     private string _replyDraftBuffer = string.Empty;
-    private string _replyResultBuffer = string.Empty;
+    private string _quickFixResultBuffer = string.Empty;
+    private string _detailedResultBuffer = string.Empty;
     private string _summarizeDraftBuffer = string.Empty;
     private string _summarizeResultBuffer = string.Empty;
 
@@ -733,8 +734,46 @@ public partial class MainWindow : Window
     public string ResultOutputText
     {
         get => TxtResult.Text;
-        set => TxtResult.Text = value;
+        set
+        {
+            TxtResult.Text = value;
+            _accumulatedResult = value;
+            TxtResultEmpty.Visibility = string.IsNullOrEmpty(value) ? Visibility.Visible : Visibility.Collapsed;
+            if (_currentMode == AppMode.Summarize)
+                _summarizeResultBuffer = value;
+            else if (_currentMode == AppMode.DetailedReview)
+                _detailedResultBuffer = value;
+            else
+                _quickFixResultBuffer = value;
+        }
     }
+
+    public string ContextInputText
+    {
+        get => TxtContext.Text;
+        set => TxtContext.Text = value;
+    }
+
+    public bool IsContextBadgeVisible => BadgeContextActive.Visibility == Visibility.Visible;
+
+    public string EmptyResultWatermarkText
+    {
+        get => TxtResultEmpty.Text;
+        set => TxtResultEmpty.Text = value;
+    }
+
+    public TonePreset CurrentTone
+    {
+        get => _currentTone;
+        set
+        {
+            _currentTone = value;
+            UpdateToneHighlights();
+            UpdateDraftLabelsForModeAndTone();
+        }
+    }
+
+    public void ClearDraftAndResult() => BtnDraftClear_Click(this, new RoutedEventArgs());
 
     public void SetMode(AppMode mode)
     {
@@ -744,15 +783,26 @@ public partial class MainWindow : Window
             _summarizeDraftBuffer = TxtDraft.Text;
             _summarizeResultBuffer = TxtResult.Text;
         }
+        else if (_currentMode == AppMode.DetailedReview)
+        {
+            _replyDraftBuffer = TxtDraft.Text;
+            _detailedResultBuffer = TxtResult.Text;
+        }
         else
         {
             _replyDraftBuffer = TxtDraft.Text;
-            _replyResultBuffer = TxtResult.Text;
+            _quickFixResultBuffer = TxtResult.Text;
         }
 
         _currentMode = mode;
 
-        // 2. Restore the target mode's text and results
+        // Clear any leftover streaming status text on the empty result overlay
+        if (!_isGenerating)
+        {
+            TxtResultEmpty.Text = string.Empty;
+        }
+
+        // 2. Restore the target mode's text and results (strictly separated per tab)
         if (mode == AppMode.Summarize)
         {
             TxtDraft.Text = _summarizeDraftBuffer;
@@ -760,12 +810,19 @@ public partial class MainWindow : Window
             _accumulatedResult = _summarizeResultBuffer;
             TxtResultEmpty.Visibility = string.IsNullOrEmpty(_summarizeResultBuffer) ? Visibility.Visible : Visibility.Collapsed;
         }
+        else if (mode == AppMode.DetailedReview)
+        {
+            TxtDraft.Text = _replyDraftBuffer;
+            TxtResult.Text = _detailedResultBuffer;
+            _accumulatedResult = _detailedResultBuffer;
+            TxtResultEmpty.Visibility = string.IsNullOrEmpty(_detailedResultBuffer) ? Visibility.Visible : Visibility.Collapsed;
+        }
         else
         {
             TxtDraft.Text = _replyDraftBuffer;
-            TxtResult.Text = _replyResultBuffer;
-            _accumulatedResult = _replyResultBuffer;
-            TxtResultEmpty.Visibility = string.IsNullOrEmpty(_replyResultBuffer) ? Visibility.Visible : Visibility.Collapsed;
+            TxtResult.Text = _quickFixResultBuffer;
+            _accumulatedResult = _quickFixResultBuffer;
+            TxtResultEmpty.Visibility = string.IsNullOrEmpty(_quickFixResultBuffer) ? Visibility.Visible : Visibility.Collapsed;
         }
         TxtDraft.CaretIndex = TxtDraft.Text.Length;
 
@@ -778,32 +835,35 @@ public partial class MainWindow : Window
         {
             case AppMode.QuickFix:
                 PanelTones.Visibility = Visibility.Visible;
+                BdContextContainer.Visibility = Visibility.Visible;
                 ExpContext.Visibility = Visibility.Visible;
-                LblInputTitle.Text = "Draft";
-                TxtDraftWatermark.Text = "Type or paste your customer reply draft here...";
-                TxtImproveBtn.Text = "Improve";
+                UpdateDraftLabelsForModeAndTone();
                 BtnViewText.Content = "Text";
                 BtnViewDiff.Content = "Diff";
                 PanelDiffSwitch.Visibility = Visibility.Visible;
-                SetDiffView(false);
-                if (!string.IsNullOrWhiteSpace(_replyDraftBuffer) || !string.IsNullOrWhiteSpace(_replyResultBuffer))
+                RtfDiff.Document.Blocks.Clear();
+                if (!string.IsNullOrWhiteSpace(_quickFixResultBuffer))
                 {
-                    RenderVisualDiff(_replyDraftBuffer, _replyResultBuffer);
+                    RenderVisualDiff(_replyDraftBuffer, _quickFixResultBuffer);
+                }
+                else
+                {
+                    SetDiffView(false);
                 }
                 break;
 
             case AppMode.DetailedReview:
-                PanelTones.Visibility = Visibility.Collapsed;
+                PanelTones.Visibility = Visibility.Visible;
+                BdContextContainer.Visibility = Visibility.Visible;
                 ExpContext.Visibility = Visibility.Visible;
-                LblInputTitle.Text = "Draft";
-                TxtDraftWatermark.Text = "Type or paste your customer reply draft here...";
-                TxtImproveBtn.Text = "Review";
+                UpdateDraftLabelsForModeAndTone();
                 BtnViewText.Content = "Raw";
                 BtnViewDiff.Content = "Styled";
                 PanelDiffSwitch.Visibility = Visibility.Visible;
-                if (!string.IsNullOrWhiteSpace(_replyResultBuffer))
+                RtfDiff.Document.Blocks.Clear();
+                if (!string.IsNullOrWhiteSpace(_detailedResultBuffer))
                 {
-                    RenderMarkdownView(_replyResultBuffer);
+                    RenderMarkdownView(_detailedResultBuffer);
                 }
                 else
                 {
@@ -813,6 +873,7 @@ public partial class MainWindow : Window
 
             case AppMode.Summarize:
                 PanelTones.Visibility = Visibility.Collapsed;
+                BdContextContainer.Visibility = Visibility.Collapsed;
                 ExpContext.Visibility = Visibility.Collapsed;
                 LblInputTitle.Text = "Customer's message";
                 TxtDraftWatermark.Text = "Paste the customer's verbose inquiry or ticket to summarize...";
@@ -820,6 +881,7 @@ public partial class MainWindow : Window
                 BtnViewText.Content = "Raw";
                 BtnViewDiff.Content = "Styled";
                 PanelDiffSwitch.Visibility = Visibility.Visible;
+                RtfDiff.Document.Blocks.Clear();
                 if (!string.IsNullOrWhiteSpace(_summarizeResultBuffer))
                 {
                     RenderMarkdownView(_summarizeResultBuffer);
@@ -838,6 +900,7 @@ public partial class MainWindow : Window
         {
             _currentTone = tone;
             UpdateToneHighlights();
+            UpdateDraftLabelsForModeAndTone();
         }
     }
 
@@ -848,6 +911,32 @@ public partial class MainWindow : Window
         HighlightTone(BdToneConcise, TxtToneConcise, _currentTone == TonePreset.Concise);
         HighlightTone(BdToneDeescalate, TxtToneDeescalate, _currentTone == TonePreset.Deescalate);
         HighlightTone(BdToneFormal, TxtToneFormal, _currentTone == TonePreset.Formal);
+        HighlightTone(BdToneRephrase, TxtToneRephrase, _currentTone == TonePreset.Rephrase);
+        HighlightTone(BdToneInternal, TxtToneInternal, _currentTone == TonePreset.Internal);
+    }
+
+    private void UpdateDraftLabelsForModeAndTone()
+    {
+        if (_currentMode == AppMode.Summarize) return;
+
+        if (_currentTone == TonePreset.Internal)
+        {
+            LblInputTitle.Text = "Internal Note / Colleague Message";
+            TxtDraftWatermark.Text = "Type or paste your internal ticket note or message to a colleague...";
+            TxtImproveBtn.Text = _currentMode == AppMode.DetailedReview ? "Review Internal" : "Polish Internal";
+        }
+        else if (_currentTone == TonePreset.Rephrase && _currentMode == AppMode.QuickFix)
+        {
+            LblInputTitle.Text = "Draft to Rephrase";
+            TxtDraftWatermark.Text = "Paste the reply you want to reword with fresh phrasing so it doesn't look repeated...";
+            TxtImproveBtn.Text = "Rephrase";
+        }
+        else
+        {
+            LblInputTitle.Text = "Draft";
+            TxtDraftWatermark.Text = "Type or paste your customer reply draft here...";
+            TxtImproveBtn.Text = _currentMode == AppMode.DetailedReview ? "Review" : "Improve";
+        }
     }
 
     private void HighlightTone(Border bd, TextBlock tb, bool isSelected)
@@ -1161,9 +1250,41 @@ public partial class MainWindow : Window
 
     private void TxtContext_TextChanged(object sender, TextChangedEventArgs e)
     {
-        BadgeContextActive.Visibility = string.IsNullOrWhiteSpace(TxtContext.Text)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        var raw = TxtContext.Text;
+        bool hasContext = !string.IsNullOrWhiteSpace(raw);
+
+        BadgeContextActive.Visibility = hasContext ? Visibility.Visible : Visibility.Collapsed;
+        TxtContextPreview.Visibility = hasContext ? Visibility.Visible : Visibility.Collapsed;
+        BtnHeaderContextClear.Visibility = hasContext ? Visibility.Visible : Visibility.Collapsed;
+
+        if (hasContext)
+        {
+            var trimmed = raw.Trim();
+            int wordCount = trimmed.Split(new[] { ' ', '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
+            TxtContextBadge.Text = $"● Active ({wordCount} {(wordCount == 1 ? "word" : "words")})";
+
+            var singleLine = trimmed.Replace("\r\n", " ").Replace("\n", " ").Replace("\r", " ");
+            if (singleLine.Length > 60)
+            {
+                singleLine = singleLine.Substring(0, 60) + "…";
+            }
+            TxtContextPreview.Text = $"— \"{singleLine}\"";
+
+            BdContextContainer.Background = new SolidColorBrush(Color.FromRgb(18, 33, 28));
+            BdContextContainer.BorderBrush = new SolidColorBrush(Color.FromRgb(34, 197, 94));
+            BdContextContainer.BorderThickness = new Thickness(1.2);
+            LblContextHeader.Foreground = new SolidColorBrush(Color.FromRgb(74, 222, 128));
+            LblContextHeader.FontWeight = FontWeights.SemiBold;
+        }
+        else
+        {
+            TxtContextPreview.Text = string.Empty;
+            BdContextContainer.Background = new SolidColorBrush(Colors.Transparent);
+            BdContextContainer.BorderBrush = new SolidColorBrush(Colors.Transparent);
+            BdContextContainer.BorderThickness = new Thickness(1);
+            LblContextHeader.Foreground = (SolidColorBrush)FindResource("TextSecondaryBrush");
+            LblContextHeader.FontWeight = FontWeights.Normal;
+        }
     }
 
     private void BtnDraftPaste_Click(object sender, RoutedEventArgs e)
@@ -1184,7 +1305,10 @@ public partial class MainWindow : Window
         _accumulatedResult = string.Empty;
         TxtStats.Text = string.Empty;
         TxtHeaderStats.Text = string.Empty;
+        TxtResultEmpty.Text = string.Empty;
         TxtResultEmpty.Visibility = Visibility.Visible;
+        BtnViewDiff.Content = _currentMode == AppMode.QuickFix ? "Diff" : "Styled";
+        SetDiffView(false);
         TxtStatus.Text = "Cleared";
 
         if (_currentMode == AppMode.Summarize)
@@ -1195,7 +1319,8 @@ public partial class MainWindow : Window
         else
         {
             _replyDraftBuffer = string.Empty;
-            _replyResultBuffer = string.Empty;
+            _quickFixResultBuffer = string.Empty;
+            _detailedResultBuffer = string.Empty;
         }
 
         TxtDraft.Focus();
@@ -1228,6 +1353,7 @@ public partial class MainWindow : Window
         TxtDraft.Text = transformed;
         TxtResult.Text = transformed;
         _accumulatedResult = transformed;
+        TxtResultEmpty.Text = string.Empty;
         TxtResultEmpty.Visibility = Visibility.Collapsed;
 
         if (_currentMode == AppMode.Summarize)
@@ -1235,10 +1361,15 @@ public partial class MainWindow : Window
             _summarizeDraftBuffer = transformed;
             _summarizeResultBuffer = transformed;
         }
+        else if (_currentMode == AppMode.DetailedReview)
+        {
+            _replyDraftBuffer = transformed;
+            _detailedResultBuffer = transformed;
+        }
         else
         {
             _replyDraftBuffer = transformed;
-            _replyResultBuffer = transformed;
+            _quickFixResultBuffer = transformed;
         }
 
         if (ChkAutoCopy.IsChecked == true)
@@ -1349,19 +1480,36 @@ public partial class MainWindow : Window
         SetDiffView(false);
 
         // Build System Prompt
-        var systemPrompt = _settingsService.Settings.GetSystemPrompt(_currentMode);
-
-        if (_currentMode == AppMode.QuickFix)
+        string systemPrompt;
+        if (_currentMode == AppMode.QuickFix && _currentTone == TonePreset.Rephrase)
         {
-            var toneInstruction = _currentTone switch
+            systemPrompt = AppSettings.DefaultRephrasePrompt;
+        }
+        else if (_currentMode == AppMode.QuickFix && _currentTone == TonePreset.Internal)
+        {
+            systemPrompt = AppSettings.DefaultInternalPrompt;
+        }
+        else if (_currentMode == AppMode.DetailedReview && _currentTone == TonePreset.Internal)
+        {
+            systemPrompt = AppSettings.DefaultInternalDetailedReviewPrompt;
+        }
+        else
+        {
+            systemPrompt = _settingsService.Settings.GetSystemPrompt(_currentMode);
+
+            if (_currentMode != AppMode.Summarize)
             {
-                TonePreset.Friendly => "\n\nTone: Ensure a warm, approachable, empathetic, and friendly customer support tone.",
-                TonePreset.Concise => "\n\nTone: Be as concise, direct, and efficient as possible, removing unnecessary words while keeping key details.",
-                TonePreset.Deescalate => "\n\nTone: De-escalate customer frustration using calm, reassuring, highly empathetic, and respectful language without admitting unverified fault.",
-                TonePreset.Formal => "\n\nTone: Maintain a formal, strictly professional, and polished business tone.",
-                _ => ""
-            };
-            systemPrompt += toneInstruction;
+                var toneInstruction = _currentTone switch
+                {
+                    TonePreset.Friendly => "\n\nTone: Ensure a warm, approachable, empathetic, and friendly customer support tone.",
+                    TonePreset.Concise => "\n\nTone: Be as concise, direct, and efficient as possible, removing unnecessary words while keeping key details.",
+                    TonePreset.Deescalate => "\n\nTone: De-escalate customer frustration using calm, reassuring, highly empathetic, and respectful language without admitting unverified fault.",
+                    TonePreset.Formal => "\n\nTone: Maintain a formal, strictly professional, and polished business tone.",
+                    TonePreset.Rephrase => "\n\nTone: Rephrase using fresh wording and varied sentence structure so the reply does not look like a copy-paste of a previous message.",
+                    _ => ""
+                };
+                systemPrompt += toneInstruction;
+            }
         }
 
         if (_selectedThinkingOption == ThinkingOption.Off)
@@ -1476,6 +1624,8 @@ public partial class MainWindow : Window
                 await _flmService.EnsureLmStudioModelReadyAsync(model.ModelId, lmProgress, _streamCts.Token);
             }
 
+            double requestTemp = (_currentMode != AppMode.Summarize && _currentTone == TonePreset.Rephrase) ? 0.55 : 0.2;
+
             await Task.Run(async () =>
             {
                 await _flmService.StreamCompletionAsync(
@@ -1484,7 +1634,8 @@ public partial class MainWindow : Window
                     userPrompt,
                     _selectedThinkingOption,
                     progress,
-                    _streamCts.Token
+                    _streamCts.Token,
+                    requestTemp
                 ).ConfigureAwait(false);
             }, _streamCts.Token);
 
@@ -1501,6 +1652,7 @@ public partial class MainWindow : Window
             }
             else
             {
+                TxtResultEmpty.Text = string.Empty;
                 TxtResultEmpty.Visibility = Visibility.Collapsed;
                 TxtResult.Text = cleanedOutput;
                 TxtResult.ScrollToEnd();
@@ -1512,9 +1664,13 @@ public partial class MainWindow : Window
             {
                 _summarizeResultBuffer = cleanedOutput;
             }
+            else if (_currentMode == AppMode.DetailedReview)
+            {
+                _detailedResultBuffer = cleanedOutput;
+            }
             else
             {
-                _replyResultBuffer = cleanedOutput;
+                _quickFixResultBuffer = cleanedOutput;
             }
 
             if (_currentMode == AppMode.QuickFix)
@@ -1549,6 +1705,8 @@ public partial class MainWindow : Window
         {
             _typingAnimationTimer?.Stop();
             _typingAnimationTimer = null;
+            TxtResultEmpty.Text = string.Empty;
+            TxtResultEmpty.Visibility = string.IsNullOrEmpty(_accumulatedResult) ? Visibility.Visible : Visibility.Collapsed;
             TxtResult.Text = _accumulatedResult;
             TxtStatus.Text = "Stopped by user";
             ShowNotificationBanner("Generation stopped by user.", false);
@@ -1557,7 +1715,8 @@ public partial class MainWindow : Window
         {
             _typingAnimationTimer?.Stop();
             _typingAnimationTimer = null;
-            TxtResultEmpty.Visibility = Visibility.Collapsed;
+            TxtResultEmpty.Text = string.Empty;
+            TxtResultEmpty.Visibility = string.IsNullOrEmpty(_accumulatedResult) ? Visibility.Visible : Visibility.Collapsed;
             TxtStatus.Text = $"Error: {ex.Message}";
             ShowNotificationBanner(ex.Message, false);
         }
@@ -1705,7 +1864,7 @@ public partial class MainWindow : Window
     {
         if (_currentMode != AppMode.QuickFix)
         {
-            var text = _currentMode == AppMode.Summarize ? _summarizeResultBuffer : _replyResultBuffer;
+            var text = _currentMode == AppMode.Summarize ? _summarizeResultBuffer : _detailedResultBuffer;
             if (string.IsNullOrEmpty(text)) text = TxtResult.Text;
             if (!string.IsNullOrEmpty(text))
             {
@@ -1892,7 +2051,15 @@ public partial class MainWindow : Window
                 TxtStats.Text = item.StatsText;
                 TxtHeaderStats.Text = item.StatsText;
                 _accumulatedResult = item.ResultText;
+                TxtResultEmpty.Text = string.Empty;
                 TxtResultEmpty.Visibility = Visibility.Collapsed;
+                if (item.Mode == AppMode.Summarize)
+                    _summarizeResultBuffer = item.ResultText;
+                else if (item.Mode == AppMode.DetailedReview)
+                    _detailedResultBuffer = item.ResultText;
+                else
+                    _quickFixResultBuffer = item.ResultText;
+
                 if (item.Mode == AppMode.QuickFix)
                 {
                     RenderVisualDiff(item.OriginalText, item.ResultText);
