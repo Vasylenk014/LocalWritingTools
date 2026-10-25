@@ -651,19 +651,19 @@
 
                 <Button x:Name="BtnModeQuickFix" Grid.Column="0" Click="BtnMode_Click" Tag="QuickFix"
                         Style="{StaticResource SegmentTabButton}" Content="Quick fix"
-                        ToolTip="Fix grammar, clarity, and tone of an existing reply draft"/>
+                        ToolTip="Fix grammar, clarity, and tone of an existing reply draft (Ctrl+1)"/>
 
                 <Button x:Name="BtnModeBrainstorm" Grid.Column="1" Click="BtnMode_Click" Tag="Brainstorm"
                         Style="{StaticResource SegmentTabButton}" Content="💡 Brainstorm"
-                        ToolTip="Write rough thoughts or shorthand in your own words â€” AI breaks it down into a structured explanation"/>
+                        ToolTip="Write rough thoughts or shorthand in your own words — AI breaks it down into a structured explanation (Ctrl+2)"/>
 
                 <Button x:Name="BtnModeDetailed" Grid.Column="2" Click="BtnMode_Click" Tag="DetailedReview"
                         Style="{StaticResource SegmentTabButton}" Content="Detailed review"
-                        ToolTip="Get Corrected, Concise, and a breakdown of grammar/style changes"/>
+                        ToolTip="Get Corrected, Concise, and a breakdown of grammar/style changes (Ctrl+3)"/>
 
                 <Button x:Name="BtnModeSummarize" Grid.Column="3" Click="BtnMode_Click" Tag="Summarize"
                         Style="{StaticResource SegmentTabButton}" Content="Summarize"
-                        ToolTip="Extract Core Issue, Key Details, and Customer Goal in 5 seconds"/>
+                        ToolTip="Extract Core Issue, Key Details, and Customer Goal in 5 seconds (Ctrl+4)"/>
             </Grid>
         </Border>
 
@@ -672,7 +672,7 @@
                    HorizontalAlignment="Center" Margin="0,0,0,10">
             <Button x:Name="BtnToneStandard" Click="BtnTone_Click" Tag="Standard"
                     Style="{StaticResource FlatButton}" Margin="0,0,5,4"
-                    ToolTip="Standard customer support reply â€” natural, warm, and helpful">
+                    ToolTip="Standard customer support reply — natural, warm, and helpful">
                 <Border x:Name="BdToneStandard" Background="{DynamicResource AccentActiveBrush}"
                         BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
                         CornerRadius="14" Padding="10,5">
@@ -877,6 +877,7 @@
                                Text="Type or paste your customer reply draft here..."
                                Foreground="{DynamicResource TextMutedBrush}"
                                FontSize="13" FontStyle="Normal"
+                               TextWrapping="Wrap"
                                Margin="12,10"
                                IsHitTestVisible="False"/>
                 </Grid>
@@ -938,8 +939,12 @@
                     <ColumnDefinition Width="Auto"/> <!-- Text / Diff Switch -->
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="Result" FontSize="13" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock Text="Result" FontSize="13" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TxtResultCount" Text="" FontSize="11"
+                               Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="8,1,0,0"/>
+                </StackPanel>
 
                 <!-- Live Tok/s Stats in Header -->
                 <TextBlock x:Name="TxtHeaderStats" Grid.Column="1" Text="" FontSize="11" FontWeight="SemiBold"
@@ -974,7 +979,8 @@
                              IsReadOnly="True"
                              TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
                              FontSize="13" FontFamily="Segoe UI Variable, Segoe UI"
-                             Padding="10,8"/>
+                             Padding="10,8"
+                             TextChanged="TxtResult_TextChanged"/>
 
                     <!-- Visual Diff View -->
                     <RichTextBox x:Name="RtfDiff" Visibility="Collapsed"
@@ -991,6 +997,7 @@
                                Text=""
                                Foreground="{DynamicResource TextMutedBrush}"
                                FontSize="12" FontStyle="Italic"
+                               TextWrapping="Wrap"
                                Margin="12,10"
                                IsHitTestVisible="False"/>
                 </Grid>

@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Windows;
 using System.Windows.Forms;
+using WritingTools.Models;
 using WritingTools.Services;
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
@@ -16,7 +17,15 @@ public partial class App : Application
 
     private static void Log(string msg)
     {
-        try { File.AppendAllText(LogFile, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {msg}\r\n"); } catch { }
+        try
+        {
+            if (File.Exists(LogFile) && new FileInfo(LogFile).Length > 256 * 1024)
+            {
+                File.WriteAllText(LogFile, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] Log rotated (capped at 256 KB)\r\n");
+            }
+            File.AppendAllText(LogFile, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {msg}\r\n");
+        }
+        catch { }
     }
 
     private static Mutex? _mutex;
@@ -45,8 +54,8 @@ public partial class App : Application
         {
             Log("Another instance already running. Exiting.");
             MessageBox.Show(
-                "Writing Tools is already running in the system tray.\nPress Alt+Shift+G or click the tray icon.",
-                "Writing Tools",
+                "Local Writing Tools is already running in the system tray.\nPress Alt+Shift+G or click the tray icon.",
+                "Local Writing Tools",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information
             );
@@ -90,7 +99,7 @@ public partial class App : Application
         _notifyIcon = new NotifyIcon
         {
             Icon = penIcon,
-            Text = "Writing Tools (Ryzen AI NPU Edition)\nAlt+Shift+G",
+            Text = "Local Writing Tools\nAlt+Shift+G",
             Visible = true
         };
 
@@ -106,7 +115,7 @@ public partial class App : Application
         // Context Menu
         var contextMenu = new ContextMenuStrip();
 
-        var titleItem = new ToolStripMenuItem("Writing Tools")
+        var titleItem = new ToolStripMenuItem("Local Writing Tools")
         {
             Font = new Font(contextMenu.Font, System.Drawing.FontStyle.Bold),
             Enabled = false
@@ -137,15 +146,11 @@ public partial class App : Application
         };
         contextMenu.Items.Add(autoCopyItem);
 
-        var startServerItem = new ToolStripMenuItem("Start FastFlowLM Server", null, async (s, e) =>
-        {
-            if (_flmService != null)
-            {
-                var model = _settingsService?.Settings.SelectedModel ?? "gemma4-it:e4b";
-                await _flmService.StartServerAsync(model);
-            }
-        });
-        contextMenu.Items.Add(startServerItem);
+        var themeMenu = new ToolStripMenuItem("Theme");
+        themeMenu.DropDownItems.Add(new ToolStripMenuItem("System (Auto)", null, (s, e) => _mainWindow?.SetTheme(AppTheme.System)));
+        themeMenu.DropDownItems.Add(new ToolStripMenuItem("Light", null, (s, e) => _mainWindow?.SetTheme(AppTheme.Light)));
+        themeMenu.DropDownItems.Add(new ToolStripMenuItem("Dark", null, (s, e) => _mainWindow?.SetTheme(AppTheme.Dark)));
+        contextMenu.Items.Add(themeMenu);
 
         contextMenu.Items.Add(new ToolStripSeparator());
 

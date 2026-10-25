@@ -13,6 +13,10 @@ namespace WritingTools.Services;
 
 public static class MarkdownDocumentRenderer
 {
+    private static readonly Regex NumberedListRegex = new(@"^(\d+[\.\)])\s+(.*)$", RegexOptions.Compiled);
+    private static readonly Regex ArrowDiffRegex = new(@"^([""“«][^""”»]+[""”»])\s*(?:→|->)\s*([""“«][^""”»]+[""”»])(.*)$", RegexOptions.Compiled);
+    private static readonly Regex BoldSpanRegex = new(@"(\*\*.*?\*\*)", RegexOptions.Compiled);
+
     // Dark theme palette
     private static readonly SolidColorBrush DarkTextPrimaryBrush = new(Color.FromRgb(0xF4, 0xF4, 0xF6));
     private static readonly SolidColorBrush DarkTextSecondaryBrush = new(Color.FromRgb(0xA1, 0xA1, 0xAA));
@@ -99,7 +103,7 @@ public static class MarkdownDocumentRenderer
             }
 
             // 2. Bullet Points (e.g. "- item" or "* item")
-            if (trimmed.StartsWith("- ") || trimmed.StartsWith("* "))
+            if (trimmed.StartsWith("- ", StringComparison.Ordinal) || trimmed.StartsWith("* ", StringComparison.Ordinal))
             {
                 var bulletContent = trimmed.Substring(2).Trim();
                 var bulletPara = new Paragraph
@@ -120,7 +124,7 @@ public static class MarkdownDocumentRenderer
             }
 
             // 3. Numbered List Items (e.g. "1. item", "2) item")
-            var numMatch = Regex.Match(trimmed, @"^(\d+[\.\)])\s+(.*)$");
+            var numMatch = NumberedListRegex.Match(trimmed);
             if (numMatch.Success)
             {
                 var numPrefix = numMatch.Groups[1].Value + " ";
@@ -159,39 +163,39 @@ public static class MarkdownDocumentRenderer
         title = text;
         var upper = text.ToUpperInvariant();
 
-        if (upper == "CORRECTED:" || upper.StartsWith("CORRECTED:"))
+        if (upper == "CORRECTED:" || upper.StartsWith("CORRECTED:", StringComparison.Ordinal))
         {
             title = "✨ " + text;
             return true;
         }
-        if (upper == "CONCISE:" || upper.StartsWith("CONCISE:"))
+        if (upper == "CONCISE:" || upper.StartsWith("CONCISE:", StringComparison.Ordinal))
         {
             title = "⚡ " + text;
             return true;
         }
-        if (upper == "CHANGES:" || upper.StartsWith("CHANGES:"))
+        if (upper == "CHANGES:" || upper.StartsWith("CHANGES:", StringComparison.Ordinal))
         {
             title = "🔍 " + text;
             return true;
         }
-        if (upper == "NOTES:" || upper.StartsWith("NOTES:"))
+        if (upper == "NOTES:" || upper.StartsWith("NOTES:", StringComparison.Ordinal))
         {
             title = "📝 " + text;
             return true;
         }
 
         // Markdown headings: #, ##, ###
-        if (text.StartsWith("### "))
+        if (text.StartsWith("### ", StringComparison.Ordinal))
         {
             title = text.Substring(4).Trim();
             return true;
         }
-        if (text.StartsWith("## "))
+        if (text.StartsWith("## ", StringComparison.Ordinal))
         {
             title = text.Substring(3).Trim();
             return true;
         }
-        if (text.StartsWith("# "))
+        if (text.StartsWith("# ", StringComparison.Ordinal))
         {
             title = text.Substring(2).Trim();
             return true;
@@ -209,7 +213,7 @@ public static class MarkdownDocumentRenderer
         SolidColorBrush greenBrush,
         SolidColorBrush redBrush)
     {
-        var arrowMatch = Regex.Match(text, @"^([""“«][^""”»]+[""”»])\s*(?:→|->)\s*([""“«][^""”»]+[""”»])(.*)$");
+        var arrowMatch = ArrowDiffRegex.Match(text);
         if (arrowMatch.Success)
         {
             var orig = arrowMatch.Groups[1].Value;
@@ -253,12 +257,12 @@ public static class MarkdownDocumentRenderer
         SolidColorBrush primaryBrush,
         SolidColorBrush accentBrush)
     {
-        var parts = Regex.Split(text, @"(\*\*.*?\*\*)");
+        var parts = BoldSpanRegex.Split(text);
         foreach (var part in parts)
         {
             if (string.IsNullOrEmpty(part)) continue;
 
-            if (part.StartsWith("**") && part.EndsWith("**") && part.Length >= 4)
+            if (part.StartsWith("**", StringComparison.Ordinal) && part.EndsWith("**", StringComparison.Ordinal) && part.Length >= 4)
             {
                 var boldText = part.Substring(2, part.Length - 4);
                 var boldRun = new Run(boldText)

@@ -45,6 +45,7 @@ public partial class MainWindow : Window
     private bool _isStartingServer;
     private bool _isExplicitExit;
     private string _accumulatedResult = string.Empty;
+    private long _lastUiStreamUpdateMs;
     private DispatcherTimer? _serverPollTimer;
     private DispatcherTimer? _typingAnimationTimer;
     private DispatcherTimer? _metricsTimer;
@@ -139,8 +140,11 @@ public partial class MainWindow : Window
     {
         if (!_isExplicitExit)
         {
-            // Close button hides window to system tray (preserves hotkey & background helper)
+            // Close button hides window to system tray and pauses background UI polling for 0% idle CPU
             e.Cancel = true;
+            _serverPollTimer?.Stop();
+            _metricsTimer?.Stop();
+            _metricsService.SetPaused(true);
             Hide();
             return;
         }
@@ -402,6 +406,17 @@ public partial class MainWindow : Window
             e.Handled = true;
             return;
         }
+
+        // Ctrl+1..4 -> Fast Mode Switching
+        if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
+            (Keyboard.Modifiers & ModifierKeys.Shift) == 0 &&
+            (Keyboard.Modifiers & ModifierKeys.Alt) == 0)
+        {
+            if (e.Key == Key.D1 || e.Key == Key.NumPad1) { SetMode(AppMode.QuickFix); e.Handled = true; return; }
+            if (e.Key == Key.D2 || e.Key == Key.NumPad2) { SetMode(AppMode.Brainstorm); e.Handled = true; return; }
+            if (e.Key == Key.D3 || e.Key == Key.NumPad3) { SetMode(AppMode.DetailedReview); e.Handled = true; return; }
+            if (e.Key == Key.D4 || e.Key == Key.NumPad4) { SetMode(AppMode.Summarize); e.Handled = true; return; }
+        }
     }
 
     public void ShowAndActivate(string? initialText = null)
@@ -413,6 +428,11 @@ public partial class MainWindow : Window
             WindowState = WindowState.Normal;
         }
         Activate();
+
+        // Resume background health & telemetry timers when window is visible
+        _metricsService.SetPaused(false);
+        _metricsTimer?.Start();
+        _serverPollTimer?.Start();
 
         if (wasHidden)
         {
@@ -1135,13 +1155,13 @@ public partial class MainWindow : Window
             if (_currentTone == TonePreset.Internal)
             {
                 LblInputTitle.Text = "Rough Internal Thoughts (Brainstorm)";
-                TxtDraftWatermark.Text = "Write rough findings, shorthand, or chaotic notes in your own words â€” AI will structure them into a clear note for colleagues...";
+                TxtDraftWatermark.Text = "Write rough findings, shorthand, or chaotic notes in your own words — AI will structure them into a clear note for colleagues...";
                 TxtImproveBtn.Text = "Structure Internal";
             }
             else
             {
                 LblInputTitle.Text = "Rough Thoughts / Key Points (Brainstorm)";
-                TxtDraftWatermark.Text = "Write roughly in your own words what needs to be explained to the user â€” AI will break it down step by step...";
+                TxtDraftWatermark.Text = "Write roughly in your own words what needs to be explained to the user — AI will break it down step by step...";
                 TxtImproveBtn.Text = "Structure Reply";
             }
             return;
@@ -1458,13 +1478,32 @@ public partial class MainWindow : Window
 
     #region Input Actions & Transformations
 
+    private static int CountWords(ReadOnlySpan<char> span)
+    {
+        int count = 0;
+        bool inWord = false;
+        for (int i = 0; i < span.Length; i++)
+        {
+            if (char.IsWhiteSpace(span[i]))
+            {
+                inWord = false;
+            }
+            else if (!inWord)
+            {
+                inWord = true;
+                count++;
+            }
+        }
+        return count;
+    }
+
     private void TxtDraft_TextChanged(object sender, TextChangedEventArgs e)
     {
         var text = TxtDraft.Text;
         TxtDraftWatermark.Visibility = string.IsNullOrEmpty(text) ? Visibility.Visible : Visibility.Collapsed;
 
-        int words = text.Split(new[] { ' ', '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
-        TxtInputCount.Text = $"{words} words · {text.Length} chars";
+        int words = CountWords(text.AsSpan());
+        TxtInputCount.Text = $" words · {text.Length} chars";
 
         // Keep mode-specific buffer in sync
         if (_currentMode == AppMode.Summarize)
@@ -1477,6 +1516,18 @@ public partial class MainWindow : Window
         }
     }
 
+    private void TxtResult_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (TxtResultCount == null) return;
+        var text = TxtResult.Text;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            TxtResultCount.Text = string.Empty;
+            return;
+        }
+        int words = CountWords(text.AsSpan());
+        TxtResultCount.Text = $" words · {text.Length} chars";
+    }
     private void TxtContext_TextChanged(object sender, TextChangedEventArgs e)
     {
         UpdateContextVisualState();
@@ -1502,7 +1553,7 @@ public partial class MainWindow : Window
         if (hasContext)
         {
             var trimmed = raw.Trim();
-            int wordCount = trimmed.Split(new[] { ' ', '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
+            int wordCount = CountWords(trimmed.AsSpan());
             TxtContextBadge.Text = $"● Active ({wordCount} {(wordCount == 1 ? "word" : "words")})";
 
             var singleLine = trimmed.Replace("\r\n", " ").Replace("\n", " ").Replace("\r", " ");
@@ -1863,8 +1914,15 @@ public partial class MainWindow : Window
                 TxtResultEmpty.Visibility = Visibility.Collapsed;
                 TxtStatus.Text = _currentMode == AppMode.Summarize ? "Summarizing..." : "Writing...";
                 _accumulatedResult += args.Content;
-                TxtResult.Text = _accumulatedResult + " ▋";
-                TxtResult.ScrollToEnd();
+
+                // Throttle UI layout & ScrollToEnd updates to ~30 FPS during high-speed streaming
+                long nowTicks = Environment.TickCount64;
+                if (nowTicks - _lastUiStreamUpdateMs >= 33)
+                {
+                    _lastUiStreamUpdateMs = nowTicks;
+                    TxtResult.Text = _accumulatedResult + " ▋";
+                    TxtResult.ScrollToEnd();
+                }
             }
 
             if (args.IsDone && args.Stats != null)

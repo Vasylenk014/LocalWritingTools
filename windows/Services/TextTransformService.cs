@@ -7,6 +7,9 @@ namespace WritingTools.Services;
 
 public static class TextTransformService
 {
+    private static readonly Regex HorizontalSpaceRegex = new(@"[ \t]+", RegexOptions.Compiled);
+    private static readonly Regex LineBreakRegex = new(@"[\r\n]+", RegexOptions.Compiled);
+
     public static string ToUpperCase(string input) => input.ToUpperInvariant();
 
     public static string ToLowerCase(string input) => input.ToLowerInvariant();
@@ -52,13 +55,13 @@ public static class TextTransformService
 
         // Replace 2+ spaces or tabs with a single space, but preserve newlines
         var lines = input.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-        var sb = new StringBuilder();
+        var sb = new StringBuilder(input.Length);
 
         bool prevWasEmpty = false;
 
         foreach (var rawLine in lines)
         {
-            var line = Regex.Replace(rawLine.Trim(), @"[ \t]+", " ");
+            var line = HorizontalSpaceRegex.Replace(rawLine.Trim(), " ");
             if (string.IsNullOrWhiteSpace(line))
             {
                 if (!prevWasEmpty && sb.Length > 0)
@@ -103,7 +106,7 @@ public static class TextTransformService
         if (string.IsNullOrEmpty(input)) return input;
 
         // Replace line breaks with single space, collapsing double spaces
-        var unwrapped = Regex.Replace(input, @"[\r\n]+", " ");
-        return Regex.Replace(unwrapped, @"[ \t]+", " ").Trim();
+        var unwrapped = LineBreakRegex.Replace(input, " ");
+        return HorizontalSpaceRegex.Replace(unwrapped, " ").Trim();
     }
 }
