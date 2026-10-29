@@ -1,7 +1,12 @@
+param(
+    [switch]$UploadRelease = $false
+)
+
 $ErrorActionPreference = "Stop"
 
 $installerDir = $PSScriptRoot
 $windowsDir = Split-Path -Parent $installerDir
+$repoRoot = Split-Path -Parent $windowsDir
 $csprojPath = Join-Path $windowsDir "WritingTools.csproj"
 $installerCs = Join-Path $installerDir "InstallerProgram.cs"
 $appIco = Join-Path $windowsDir "app.ico"
@@ -86,3 +91,51 @@ Write-Host "=====================================================" -ForegroundCo
 Write-Host "[OK] Installer built successfully!" -ForegroundColor Green
 Write-Host "     Output: $finalSetupExe ($finalSizeMb MB)" -ForegroundColor Green
 Write-Host "=====================================================" -ForegroundColor Green
+
+if ($UploadRelease) {
+    Write-Host "[GitHub] Uploading LocalWritingTools-Setup.exe to GitHub Releases..." -ForegroundColor Cyan
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Set-Location $repoRoot
+    $credLines = ("protocol=https`nhost=github.com`n`n" | git credential fill)
+    $tokenLine = $credLines | Where-Object { $_ -match "^password=" } | Select-Object -First 1
+    if (-not $tokenLine) {
+        throw "Could not retrieve GitHub token from git credential helper."
+    }
+    $token = $tokenLine.Substring(9).Trim()
+    $headers = @{
+        "Authorization" = "Bearer $token"
+        "Accept"        = "application/vnd.github+json"
+        "User-Agent"    = "LocalWritingTools-ReleaseUploader"
+    }
+
+    $tagName = "v2.1.0"
+    $repoApi = "https://api.github.com/repos/Vasylenk014/LocalWritingTools"
+    $release = $null
+    try {
+        $release = Invoke-RestMethod -Uri "$repoApi/releases/tags/$tagName" -Headers $headers -Method Get
+    } catch { }
+
+    if (-not $release) {
+        $bodyObj = @{
+            tag_name   = $tagName
+            name       = "Local Writing Tools $tagName (Windows & macOS)"
+            body       = "## Local Writing Tools $tagName`n`n### Direct Download for Windows 10 / 11 (64-bit)`n- **[Download LocalWritingTools-Setup.exe](https://github.com/Vasylenk014/LocalWritingTools/releases/latest/download/LocalWritingTools-Setup.exe)** (`$finalSizeMb MB` - Self-contained graphical Setup Wizard with `.NET 8` runtime included, no Administrator rights required)."
+            draft      = $false
+            prerelease = $false
+        }
+        $bodyJson = $bodyObj | ConvertTo-Json -Depth 5
+        $release = Invoke-RestMethod -Uri "$repoApi/releases" -Headers $headers -Method Post -Body ([System.Text.Encoding]::UTF8.GetBytes($bodyJson)) -ContentType "application/json; charset=utf-8"
+    }
+
+    # Delete existing asset if present
+    foreach ($asset in $release.assets) {
+        if ($asset.name -eq "LocalWritingTools-Setup.exe") {
+            Invoke-RestMethod -Uri "$repoApi/releases/assets/$($asset.id)" -Headers $headers -Method Delete | Out-Null
+        }
+    }
+
+    # Upload new LocalWritingTools-Setup.exe asset
+    $uploadUrl = "https://uploads.github.com/repos/Vasylenk014/LocalWritingTools/releases/$($release.id)/assets?name=LocalWritingTools-Setup.exe"
+    $assetResult = Invoke-RestMethod -Uri $uploadUrl -Headers $headers -Method Post -InFile $finalSetupExe -ContentType "application/octet-stream"
+    Write-Host "[OK] Uploaded to GitHub Release: $($assetResult.browser_download_url)" -ForegroundColor Green
+}

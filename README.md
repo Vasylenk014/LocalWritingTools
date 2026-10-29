@@ -7,6 +7,14 @@
 
 > **Local Writing Tools** is a private, lightweight writing companion designed specifically for customer support specialists and professional communications. It connects to locally hosted LLMs via **FastFlowLM (AMD Ryzen AI NPU)** on laptops or **LM Studio (NVIDIA/AMD GPU)** on desktop PCs to refine, edit, and summarize drafts instantly with **zero cloud dependencies**, zero subscription fees, and no risk of customer data leaks.
 
+
+## 📥 Download for Windows (One-Click Installer)
+
+[![Download Windows Installer](https://img.shields.io/badge/Download_for_Windows_10_%2F_11-LocalWritingTools--Setup.exe-6366F1?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Vasylenk014/LocalWritingTools/releases/latest/download/LocalWritingTools-Setup.exe)
+
+- **Direct Download:** [**LocalWritingTools-Setup.exe (Latest Release)**](https://github.com/Vasylenk014/LocalWritingTools/releases/latest/download/LocalWritingTools-Setup.exe)
+- Includes .NET 8 runtime out of the box (no extra installations or Administrator rights required).
+
 ---
 
 ## 🔒 Why Local Writing Tools?

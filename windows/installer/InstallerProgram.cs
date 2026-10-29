@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
@@ -16,6 +17,9 @@ namespace WritingTools.Setup
     {
         [DllImport("user32.dll")]
         public static extern bool SetProcessDPIAware();
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern bool DestroyIcon(IntPtr handle);
 
         [DllImport("dwmapi.dll")]
         public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
@@ -35,6 +39,73 @@ namespace WritingTools.Setup
         public const string UninstallRegKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\LocalWritingTools";
         public const string RunRegKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
         public const string RunValueName = "LocalWritingTools";
+
+        public static Bitmap CreatePenBitmap(int size)
+        {
+            var bitmap = new Bitmap(size, size);
+            using (var g = Graphics.FromImage(bitmap))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.Clear(Color.Transparent);
+
+                using (var bgBrush = new LinearGradientBrush(
+                    new Rectangle(1, 1, size - 2, size - 2),
+                    Color.FromArgb(139, 92, 246),
+                    Color.FromArgb(59, 130, 246),
+                    LinearGradientMode.ForwardDiagonal))
+                {
+                    g.FillEllipse(bgBrush, 1, 1, size - 3, size - 3);
+                }
+
+                using (var rimPen = new Pen(Color.FromArgb(160, 255, 255, 255), Math.Max(1f, size * 0.035f)))
+                {
+                    g.DrawEllipse(rimPen, 1, 1, size - 3, size - 3);
+                }
+
+                using (var penTip = new SolidBrush(Color.White))
+                {
+                    PointF[] nib = new PointF[]
+                    {
+                        new PointF(size * 0.22f, size * 0.78f),
+                        new PointF(size * 0.39f, size * 0.49f),
+                        new PointF(size * 0.52f, size * 0.36f),
+                        new PointF(size * 0.76f, size * 0.22f),
+                        new PointF(size * 0.78f, size * 0.24f),
+                        new PointF(size * 0.64f, size * 0.49f),
+                        new PointF(size * 0.51f, size * 0.61f),
+                    };
+                    g.FillPolygon(penTip, nib);
+                }
+
+                using (var slitPen = new Pen(Color.FromArgb(49, 46, 129), Math.Max(1.2f, size * 0.04f)))
+                {
+                    g.DrawLine(slitPen, size * 0.24f, size * 0.76f, size * 0.44f, size * 0.56f);
+                }
+
+                using (var holeBrush = new SolidBrush(Color.FromArgb(49, 46, 129)))
+                {
+                    float holeSize = Math.Max(2f, size * 0.07f);
+                    g.FillEllipse(holeBrush, size * 0.42f, size * 0.53f, holeSize, holeSize);
+                }
+
+                using (var starBrush = new SolidBrush(Color.FromArgb(250, 204, 21)))
+                {
+                    float starRadius = Math.Max(2.5f, size * 0.12f);
+                    float cx = size * 0.18f;
+                    float cy = size * 0.75f;
+                    g.FillEllipse(starBrush, cx - starRadius, cy - starRadius, starRadius * 2, starRadius * 2);
+
+                    using (var whiteCenter = new SolidBrush(Color.White))
+                    {
+                        float innerRadius = starRadius * 0.45f;
+                        g.FillEllipse(whiteCenter, cx - innerRadius, cy - innerRadius, innerRadius * 2, innerRadius * 2);
+                    }
+                }
+            }
+            return bitmap;
+        }
 
         [STAThread]
         public static int Main(string[] args)
@@ -419,12 +490,11 @@ namespace WritingTools.Setup
 
             try
             {
-                using (Stream icoStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("LocalWritingTools.app.ico"))
+                using (Bitmap bmp32 = InstallerProgram.CreatePenBitmap(32))
                 {
-                    if (icoStream != null)
-                    {
-                        Icon = new Icon(icoStream);
-                    }
+                    IntPtr hIcon = bmp32.GetHicon();
+                    Icon = (Icon)Icon.FromHandle(hIcon).Clone();
+                    NativeMethods.DestroyIcon(hIcon);
                 }
             }
             catch { }
@@ -447,14 +517,11 @@ namespace WritingTools.Setup
             var picIcon = new PictureBox
             {
                 Location = new Point(22, 18),
-                Size = new Size(44, 44),
+                Size = new Size(46, 46),
                 SizeMode = PictureBoxSizeMode.Zoom,
-                BackColor = Color.Transparent
+                BackColor = Color.Transparent,
+                Image = InstallerProgram.CreatePenBitmap(128)
             };
-            if (Icon != null)
-            {
-                picIcon.Image = Icon.ToBitmap();
-            }
 
             var lblTitle = new Label
             {
@@ -462,8 +529,9 @@ namespace WritingTools.Setup
                 Font = new Font("Segoe UI Semibold", 15f, FontStyle.Bold),
                 ForeColor = TextPrimary,
                 AutoSize = true,
-                Location = new Point(76, 16),
-                BackColor = Color.Transparent
+                Location = new Point(78, 16),
+                BackColor = Color.Transparent,
+                UseMnemonic = false
             };
 
             var lblSubtitle = new Label
@@ -472,8 +540,9 @@ namespace WritingTools.Setup
                 Font = new Font("Segoe UI", 9.25f, FontStyle.Regular),
                 ForeColor = TextSecondary,
                 AutoSize = true,
-                Location = new Point(78, 46),
-                BackColor = Color.Transparent
+                Location = new Point(80, 46),
+                BackColor = Color.Transparent,
+                UseMnemonic = false
             };
 
             headerPanel.Controls.Add(picIcon);
@@ -547,7 +616,8 @@ namespace WritingTools.Setup
                 AutoSize = false,
                 Location = new Point(24, 326),
                 Size = new Size(512, 22),
-                Font = new Font("Segoe UI", 9f)
+                Font = new Font("Segoe UI", 9f),
+                UseMnemonic = false
             };
             Controls.Add(_lblStatus);
 
@@ -623,7 +693,8 @@ namespace WritingTools.Setup
                 Location = new Point(28, y),
                 ForeColor = TextPrimary,
                 BackColor = Color.Transparent,
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                UseMnemonic = false
             };
         }
 
