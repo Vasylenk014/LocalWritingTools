@@ -61,3 +61,6 @@ dist/
 *.swp
 *~
 *.bak
+windows/installer/output/
+windows/installer/staging-app/
+*.zip
